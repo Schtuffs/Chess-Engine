@@ -26,6 +26,7 @@ GLFWwindow* WindowManager::init() {
     
     glfwMakeContextCurrent(window);
     gladLoadGL();
+    glViewport(0, 0, 800, 800);
     
     return window;
 }
@@ -39,5 +40,6 @@ void WindowManager::initCallbacks(GLFWwindow* window) {
     glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, cursor_position_callback);
 	glfwSetCharCallback(window, character_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 }
 
