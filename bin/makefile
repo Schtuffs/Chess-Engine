@@ -9,12 +9,15 @@ FLAGS	 = -std=c++17 -I$(INCLUDE) -L../lib
 CXXFLAGS = -c -Wall $(FLAGS)
 LDFLAGS	 = $(FLAGS) # -mwindows
 
-OBJECTS	 = glad.o main.o WindowManager.o RenderManager.o Callbacks.o FpsTracker.o Pawn.o
+OBJECTS	 = glad.o stb_image.o main.o WindowManager.o RenderManager.o Callbacks.o FpsTracker.o Pawn.o
 
 all: $(OBJECTS)
 	$(CXX) $(LDFLAGS) $(OBJECTS) -lglfw3dll -o $(EXE)
 
 glad.o: $(SRC)/glad.c
+	$(CXX) $(CXXFLAGS) $<
+
+stb_image.o: $(SRC)/stb_image.cpp $(INCLUDE)/stb_image.h
 	$(CXX) $(CXXFLAGS) $<
 
 main.o: $(SRC)/main.cpp

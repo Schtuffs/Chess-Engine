@@ -1,6 +1,6 @@
 #include "FpsTracker.h"
 
-static bool showFps = false;
+bool FpsTracker::showFps = false;
 
 FpsTracker::FpsTracker() {
     // For main calculation
@@ -14,13 +14,19 @@ FpsTracker::FpsTracker() {
 }
 
 void FpsTracker::fps() {
-    if (!showFps) {
+    if (!this->showFps) {
         return;
     }
 
     this->m_fps++;
     clock_t currentClock = clock();
     if (currentClock - this->m_prev_clock >= CLOCKS_PER_SEC) {
+        // Prevent first FPS of 1 to affect the average
+        if (this->m_fps == 1 && this->m_average == 0) {
+            this->m_prev_clock = currentClock;
+            return;
+        }
+
         // Display the total fps
         this->m_prev_clock = currentClock;
         std::cout << "FPS: " << this->m_fps;
@@ -31,6 +37,7 @@ void FpsTracker::fps() {
         this->m_average = this->m_total / this->m_count;
         std::cout << ", Average: " << this->m_average << std::endl;
         
+        // Reset FPS count
         this->m_fps = 0;
     }
 }

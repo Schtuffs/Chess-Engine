@@ -16,5 +16,6 @@ void cursor_position_callback(GLFWwindow* window, double xPos, double yPos) {}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+    RenderManager::resize(width, height);
 } 
 

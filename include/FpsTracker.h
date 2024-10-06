@@ -8,6 +8,7 @@ class FpsTracker {
 private:
     unsigned long long m_fps, m_average, m_total, m_count;
     clock_t m_prev_clock;
+    static bool showFps;
 
 public:
     FpsTracker();

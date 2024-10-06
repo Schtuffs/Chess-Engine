@@ -28,6 +28,10 @@ GLFWwindow* WindowManager::init() {
     gladLoadGL();
     glViewport(0, 0, 800, 800);
     
+    // Setting blendmode so .png have blank backgrounds
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
     return window;
 }
 

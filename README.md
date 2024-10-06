@@ -27,4 +27,5 @@
 
 ### Piece art
  Hand-made by me in microsoft paint a few months ago, which is part of the 
- reason im doing this project.
+ reason im doing this project. That part was easy. Rendering these textures onto
+ squares is a lot harder.

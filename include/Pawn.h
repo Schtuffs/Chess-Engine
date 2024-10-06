@@ -9,13 +9,16 @@ private:
     bool moved;
 
 public:
-    Pawn(int x = 1, int y = 1);
+    Pawn(GLuint team, int x = 0, int y = 0);
 
-    GLuint getVBO();
     POINT getPos();
+    GLuint VAO();
+    GLuint VBO();
+    GLuint EBO();
+    GLuint TexID();
 
     void move();
 
-    void render();
+    ~Pawn();
 };
 

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
+#include <stb_image.h>
 
 #define PIECE_PAWN      0x01
 #define PIECE_KNIGHT    0x02
@@ -11,21 +12,24 @@
 #define PIECE_QUEEN     0x05
 #define PIECE_KING      0x06
 
+#define PIECE_WHITE     0x10
+#define PIECE_BLACK     0x11
+
 typedef struct point {
     int x, y;
 } POINT;
 
 class Piece {
 protected:
-    int type, imgID, VBO;
+    GLuint type, colour, texID, vao, vbo, ebo, value;
     POINT pos;
 
 public:
-    // Render piece to screen
-    virtual void render() = 0;
-
-    virtual GLuint getVBO() = 0;
     virtual POINT getPos() = 0;
+    virtual GLuint VAO() = 0;
+    virtual GLuint VBO() = 0;
+    virtual GLuint EBO() = 0;
+    virtual GLuint TexID() = 0;
 
     // Move piece to position
     virtual void move() = 0;
