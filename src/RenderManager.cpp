@@ -103,16 +103,16 @@ GLuint RenderManager::id() {
 }
 
 void RenderManager::rect(int x, int y, int width, int height) {
-    GLfloat fx = this->map<GLfloat>(x, 0, winSize.x, -1,  1);
-    GLfloat fy = this->map<GLfloat>(y, 0, winSize.y,  1, -1);
+    GLfloat fx = this->map<GLfloat>(x, 0, winSize.x, -1, 1);
+    GLfloat fy = this->map<GLfloat>(y, 0, winSize.y, -1, 1);
     GLfloat fw = this->map<GLfloat>(width, 0, winSize.x, 0, 2);
     GLfloat fh = this->map<GLfloat>(height, 0, winSize.y, 0, 2);
 
     GLfloat vertices[] = {
         fx,      fy,     
         fx + fw, fy,     
-        fx,      fy - fh,
-        fx + fw, fy - fh
+        fx,      fy + fh,
+        fx + fw, fy + fh
     };
 
     GLuint indices[] = {0, 1, 2, 1, 2, 3};
@@ -141,7 +141,7 @@ void RenderManager::board() {
 
     for (int y = 0; y < GRID_SIZE; y++) {
         for (int x = 0; x < GRID_SIZE; x++) {
-            if ((x + y) % 2) {
+            if ((x + y) % 2 == 0) {
                 this->rect(x * scale, y * scale, scale, scale);
             }
         }
@@ -151,14 +151,24 @@ void RenderManager::board() {
 }
 
 void RenderManager::render(Piece& piece) {
-    POINT pos = piece.getPos();
-    GLfloat x = this->map<GLfloat>(pos.x, 0, winSize.x, -1, 1);
-    GLfloat y = this->map<GLfloat>(pos.y, 0, winSize.y, -1, 1);
-    
     GLfloat scale = this->min(winSize);
     scale /= GRID_SIZE;
-    GLfloat sx = this->map<GLfloat>(scale, 0, winSize.x, 0, 2);
-    GLfloat sy = this->map<GLfloat>(scale, 0, winSize.y, 0, 2);
+
+    POINT pos = piece.getPos();
+    GLfloat x, y;
+    if (!piece.is_moving()) {
+        pos.x--;
+        pos.y--;
+        x = this->map<GLfloat>((int)(pos.x * scale), 0, winSize.x, -1, 1);
+        y = this->map<GLfloat>((int)(pos.y * scale), 0, winSize.y, -1, 1);
+    }
+    else {
+        x = this->map<GLfloat>(pos.x, 0, winSize.x, -1, 1);
+        y = this->map<GLfloat>(pos.y, 0, winSize.y, -1, 1);
+    }
+    
+    GLfloat sx = this->map<GLfloat>((int)(scale), 0, winSize.x, 0, 2);
+    GLfloat sy = this->map<GLfloat>((int)(scale), 0, winSize.y, 0, 2);
 
 
     GLfloat vertices[] = {
@@ -328,6 +338,14 @@ GLuint RenderManager::genEBO() {
 void RenderManager::resize(int width, int height) {
     winSize.x = width;
     winSize.y = height;
+}
+
+int RenderManager::winSizeX() {
+    return winSize.x;
+}
+
+int RenderManager::winSizeY() {
+    return winSize.y;
 }
 
 bool RenderManager::is_created() {

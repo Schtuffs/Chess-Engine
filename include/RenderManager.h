@@ -33,7 +33,10 @@ public:
     static GLuint genVAO();
     static GLuint genVBO();
     static GLuint genEBO();
+
     static void resize(int width, int height);
+    static int winSizeX();
+    static int winSizeY();
 
     void board();
     void render(Piece& piece);

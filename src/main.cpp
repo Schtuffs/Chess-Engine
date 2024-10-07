@@ -1,6 +1,7 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
+#include <vector>
 
 #include "WindowManager.h"
 #include "RenderManager.h"
@@ -21,14 +22,14 @@ int main(void) {
     }
 
     // Manual board setup with pawns
-    Pawn wpawn1(PIECE_WHITE, 000, 100);
-    Pawn wpawn2(PIECE_WHITE, 100, 100);
-    Pawn wpawn3(PIECE_WHITE, 200, 100);
-    Pawn wpawn4(PIECE_WHITE, 300, 100);
-    Pawn wpawn5(PIECE_WHITE, 400, 100);
-    Pawn wpawn6(PIECE_WHITE, 500, 100);
-    Pawn wpawn7(PIECE_WHITE, 600, 100);
-    Pawn wpawn8(PIECE_WHITE, 700, 100);
+    Pawn wpawn1(PIECE_WHITE, 1, 2);
+    Pawn wpawn2(PIECE_WHITE, 2, 2);
+    Pawn wpawn3(PIECE_WHITE, 3, 2);
+    Pawn wpawn4(PIECE_WHITE, 4, 2);
+    Pawn wpawn5(PIECE_WHITE, 5, 2);
+    Pawn wpawn6(PIECE_WHITE, 6, 2);
+    Pawn wpawn7(PIECE_WHITE, 7, 2);
+    Pawn wpawn8(PIECE_WHITE, 8, 2);
 
     /*Knight wknight1(PIECE_WHITE, 100, 000);
     Knight wknight2(PIECE_WHITE, 600, 000);
@@ -39,14 +40,14 @@ int main(void) {
     Queen wqueen   (PIECE_WHITE, 300, 000);
     King wking     (PIECE_WHITE, 400, 000);*/
 
-    Pawn bpawn1(PIECE_BLACK, 000, 600);
-    Pawn bpawn2(PIECE_BLACK, 100, 600);
-    Pawn bpawn3(PIECE_BLACK, 200, 600);
-    Pawn bpawn4(PIECE_BLACK, 300, 600);
-    Pawn bpawn5(PIECE_BLACK, 400, 600);
-    Pawn bpawn6(PIECE_BLACK, 500, 600);
-    Pawn bpawn7(PIECE_BLACK, 600, 600);
-    Pawn bpawn8(PIECE_BLACK, 700, 600);
+    Pawn bpawn1(PIECE_BLACK, 1, 7);
+    Pawn bpawn2(PIECE_BLACK, 2, 7);
+    Pawn bpawn3(PIECE_BLACK, 3, 7);
+    Pawn bpawn4(PIECE_BLACK, 4, 7);
+    Pawn bpawn5(PIECE_BLACK, 5, 7);
+    Pawn bpawn6(PIECE_BLACK, 6, 7);
+    Pawn bpawn7(PIECE_BLACK, 7, 7);
+    Pawn bpawn8(PIECE_BLACK, 8, 7);
 
     /*Knight bknight1(PIECE_BLACK, 100, 700);
     Knight bknight2(PIECE_BLACK, 600, 700);
