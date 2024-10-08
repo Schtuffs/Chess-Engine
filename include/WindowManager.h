@@ -4,10 +4,43 @@
 #include <glfw/glfw3.h>
 
 #include "Callbacks.h"
+#include "Library.h"
 
 namespace WindowManager {
-    GLFWwindow* init();
-    void background(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
-    void initCallbacks(GLFWwindow* window);
+    // ----- Creation -----
+    // Does simple initialization functions
+    // Will automatically end program if anything goes wrong
+    // Window created is automatically put into main context
+    // Glad is initialized as well
+    void init();
+
+    // ----- Reading -----
+
+    // Returns if the window should close or not
+    // Will return false when the window should continue to run
+    bool shouldClose();
+
+    // Gives the dimensions of the window in pixels
+    POINT winSize();
+
+    // Swap buffers, renders the window
+    void swap();
+
+    // Poll window events and process them
+    void poll();
+
+    // ----- Useful -----
+
+    // Initialize callback functions for window
+    // Allows processing of user input
+    void initCallbacks();
+
+    // Stores the window size for easy access later
+    void resize(int width, int height);
+
+    // ----- Destruction -----
+
+    // Closes OpenGL functions and frees the memory
+    void close();
 }
 

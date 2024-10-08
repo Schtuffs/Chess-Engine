@@ -2,46 +2,52 @@
 
 #include <iostream>
 #include <fstream>
+#include <glad/glad.h>
 
 #include "Piece.h"
+#include "Library.h"
+#include "BindManager.h"
+#include "WindowManager.h"
 
-#define GRID_SIZE   8
-
+// Manages the rendering of items to the screen, such as squares or pieces
 class RenderManager {
 private:
-    GLuint shaderID, vao, vbo, ebo;
-    bool created;
+    GLuint m_shaderTexID, m_shaderColID, m_vao, m_vbo, m_ebo;
+    bool m_created;
 
-    // Automatically deals with texture ids
-    static GLuint texSlot;
-    static POINT winSize;
+    // ----- Creation -----
 
+    // Reads the .vert and .frag files and returns their contents
     std::string read(const std::string& filename);
+
+    // Checks that shader files and shader program compiler properly
     void compileErrors(GLuint id, GLuint type);
-    
-    template <typename t>
-    t map(t value, t currentMin, t currentMax, t newMin, t newMax);
-    GLfloat min(int x, int y);
-    GLfloat min(POINT pos);
-    void rect(int x, int y, int width, int height);
 
 public:
-    RenderManager(const std::string& vertFile = "../lib/default.vert", const std::string& fragFile = "../lib/default.frag");
+    // ----- Creation -----
+    RenderManager(const std::string& vertFile = "../lib/default.vert", const std::string& fragTexFile = "../lib/defaultTex.frag", const std::string& fragColFile = "../lib/defaultCol.frag");
+
+    // For checking that shader files were properly read
+    // Returns if they were
     bool is_created();
 
-    static GLuint genTex(GLuint type, GLuint colour);
-    static GLuint genVAO();
-    static GLuint genVBO();
-    static GLuint genEBO();
+    // ----- Render -----
 
-    static void resize(int width, int height);
-    static int winSizeX();
-    static int winSizeY();
+    // Renders background with specified colour
+    void background(COLOUR& colour);
 
-    void board();
+    // Creates a square at given pixel coordinates with specified height
+    void rect(COLOUR& colour, int x, int y, int width, int height);
+
+    // Renders a piece to the screen
     void render(Piece& piece);
-    GLuint id();
-    
+
+    // ----- Destruction -----
+
+    // Deletes this objects rendering buffers
     ~RenderManager();
 };
+
+// Deletes rendering buffers of a piece
+void DeleteBufferObjects(Piece& piece);
 

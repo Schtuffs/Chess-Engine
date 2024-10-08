@@ -12,10 +12,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void character_callback(GLFWwindow* window, GLuint codepoint) {}
 
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {}
+
 void cursor_position_callback(GLFWwindow* window, double xPos, double yPos) {}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
-    RenderManager::resize(width, height);
+    WindowManager::resize(width, height);
 } 
 

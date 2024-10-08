@@ -12,6 +12,11 @@
 ### Window Manager
  Deals with the creation and functionality of the window.
 
+### Board Manager
+ Handles the rendering manager for the board and pieces. Allows
+ selection of board colour, adding pieces, resetting the board, and
+ works with other functions to select pieces and move them around.
+
 ### Render Manager
  Deals with the rendering of stuff to the screen.
 
@@ -20,10 +25,10 @@
 
 ## Pieces
 
-### Inheritance
- All pieces will inherit from the pieces virtual class, forcing them to 
- make a few functions. This will also allow some polymorphism when trying to
- do functions, such as calculating moves.
+### All as one
+ Pieces are all one type but will call different functions based 
+ on what type they are. Such as pieces calling different move methods 
+ to determine their legal moves in any given position.
 
 ### Piece art
  Hand-made by me in microsoft paint a few months ago, which is part of the 

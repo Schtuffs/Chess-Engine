@@ -2,9 +2,9 @@
 
 #include <iostream>
 #include <glad/glad.h>
-#include <glfw/glfw3.h>
 #include <stb_image.h>
 
+#define PIECE_INVALID   0x00
 #define PIECE_PAWN      0x01
 #define PIECE_KNIGHT    0x02
 #define PIECE_BISHOP    0x03
@@ -21,17 +21,22 @@ typedef struct point {
 
 class Piece {
 protected:
-    GLuint type, colour, texID, vao, vbo, ebo, value;
-    POINT pos;
+    GLuint m_type, m_colour, m_texID, m_vao, m_vbo, m_ebo, m_value;
+    POINT m_pos;
 
 public:
-    virtual POINT getPos() = 0;
-    virtual GLuint VAO() = 0;
-    virtual GLuint VBO() = 0;
-    virtual GLuint EBO() = 0;
-    virtual GLuint TexID() = 0;
+    Piece(GLenum type = PIECE_PAWN, GLenum colour = PIECE_WHITE, int x = 1, int y = 1);
+
+    POINT Pos();
+    GLuint VAO();
+    GLuint VBO();
+    GLuint EBO();
+    GLuint TexID();
 
     // Move piece to position
-    virtual void move() = 0;
+    void move();
+
+    ~Piece();
+    friend void DeleteBufferObjects(Piece& piece);
 };
 

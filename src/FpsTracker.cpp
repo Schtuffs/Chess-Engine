@@ -1,52 +1,45 @@
 #include "FpsTracker.h"
 
-bool FpsTracker::showFps = false;
+namespace FpsTracker {
+    // Setup variables
+    static int s_fps = 0, s_average = 0, s_count = 0;
+    static unsigned long long s_total = 0;
+    static clock_t s_prev_clock = 0;
+    static bool showFps = false;
 
-FpsTracker::FpsTracker() {
-    // For main calculation
-    this->m_fps = 0;
-    this->m_prev_clock = 0;
-
-    // For average calculation
-    this->m_average = 0;
-    this->m_total = 0;
-    this->m_count = 0;
-}
-
-void FpsTracker::fps() {
-    if (!this->showFps) {
-        return;
-    }
-
-    this->m_fps++;
-    clock_t currentClock = clock();
-    if (currentClock - this->m_prev_clock >= CLOCKS_PER_SEC) {
-        // Prevent first FPS of 1 to affect the average
-        if (this->m_fps == 1 && this->m_average == 0) {
-            this->m_prev_clock = currentClock;
+    void fps() {
+        // Return if off
+        if (!showFps) {
             return;
         }
 
-        // Display the total fps
-        this->m_prev_clock = currentClock;
-        std::cout << "FPS: " << this->m_fps;
+        // Determine if it has been enough clocks since last display
+        s_fps++;
+        clock_t currentClock = clock();
+        if (currentClock - s_prev_clock >= CLOCKS_PER_SEC) {
+            // Prevent first FPS of 1 to affect the average
+            if (s_fps == 1 && s_average == 0) {
+                s_prev_clock = currentClock;
+                return;
+            }
 
-        // Calculate out average fps over program runtime
-        this->m_total += this->m_fps;
-        this->m_count++;
-        this->m_average = this->m_total / this->m_count;
-        std::cout << ", Average: " << this->m_average << std::endl;
-        
-        // Reset FPS count
-        this->m_fps = 0;
+            // Display the total fps
+            s_prev_clock = currentClock;
+            std::cout << "FPS: " << s_fps;
+
+            // Calculate out average fps over program runtime
+            s_total += s_fps;
+            s_count++;
+            s_average = s_total / s_count;
+            std::cout << ", Average: " << s_average << std::endl;
+
+            // Reset FPS count
+            s_fps = 0;
+        }
     }
-}
 
-void FpsTracker::showFPS() {
-    showFps = !showFps;
-}
-
-FpsTracker::~FpsTracker() {
-    // Nothing todo
+    void showFPS() {
+        showFps = !showFps;
+    }
 }
 
