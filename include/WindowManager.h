@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
@@ -28,6 +29,9 @@ namespace WindowManager {
 
     // Poll window events and process them
     void poll();
+
+    // Gives data for current mouse position
+    void cursorPos(double& x, double& y);
 
     // ----- Useful -----
 

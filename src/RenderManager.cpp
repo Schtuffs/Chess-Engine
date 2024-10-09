@@ -176,11 +176,27 @@ void RenderManager::render(Piece& piece) {
     scale /= GRID_SIZE;
 
     // For rendering in vector-space instead of pixel-space
-    POINT pos = piece.Pos();
-    GLfloat x = Library::map((int)((pos.x - 1) * scale), 0, winSize.x, -1, 1);
-    GLfloat y = Library::map((int)((pos.y - 1) * scale), 0, winSize.y, -1, 1);
-    GLfloat sx = Library::map((int)(scale), 0, winSize.x, 0, 2);
-    GLfloat sy = Library::map((int)(scale), 0, winSize.y, 0, 2);
+    GLfloat x, y, sx, sy;
+    if (!piece.isHeld()) {
+        // Draws based on grid position
+        POINT pos = piece.GridPos();
+        x = Library::map((int)((pos.x - 1) * scale), 0, winSize.x, -1, 1);
+        y = Library::map((int)((pos.y - 1) * scale), 0, winSize.y, -1, 1);
+        sx = Library::map((int)(scale), 0, winSize.x, 0, 2);
+        sy = Library::map((int)(scale), 0, winSize.y, 0, 2);
+    }
+    else {
+        // Uses physical piece position on screen to draw
+        POINT pos = piece.PhysPos();
+        x =  Library::map((int)(pos.x), 0, winSize.x, -1, 1);
+        y =  Library::map((int)(pos.y), 0, winSize.y, -1, 1);
+        sx = Library::map((int)(scale), 0, winSize.x,  0, 2);
+        sy = Library::map((int)(scale), 0, winSize.y,  0, 2);
+
+        // Centers piece around the mouse
+        x -= sx / 2;
+        y -= sy / 2;
+    }
 
     GLfloat vertices[] = {
         // positions          // texture coords

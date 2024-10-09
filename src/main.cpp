@@ -2,10 +2,8 @@
 #include <glad/glad.h>
 #include <vector>
 
-#include "WindowManager.h"
-#include "BoardManager.h"
 #include "Piece.h"
-#include "FpsTracker.h"
+#include "BoardManager.h"
 
 int main(void) {
     // Window initialization functions
@@ -13,13 +11,16 @@ int main(void) {
     WindowManager::initCallbacks();
 
     // Create board manager
-    BoardManager boardManager(BOARD_FILL_AUTOMATIC, BOARD_DBLUE_LBLUE);
+    BoardManager boardManager(BOARD_BROWN_BROWN);
 
     // Main window loop
     while(!WindowManager::shouldClose()) {
         // FPS counter so I can optimize a few things
         FpsTracker::fps();
 
+        // Checks for any actions needed to be taken
+        boardManager.check();
+        
         // Show board and pieces
         boardManager.show();
 

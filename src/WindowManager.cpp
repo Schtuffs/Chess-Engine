@@ -70,6 +70,10 @@ namespace WindowManager {
         glfwPollEvents();
     }
 
+    void cursorPos(double& x, double& y) {
+        glfwGetCursorPos(s_window, &x, &y);
+    }
+
     // Useful functions
 
     void resize(int width, int height) {

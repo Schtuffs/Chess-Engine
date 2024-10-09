@@ -14,6 +14,11 @@
 #define BOARD_GREEN_CREAM       0x32
 #define BOARD_DBLUE_LBLUE       0x33
 
+#define TURN_WHITE              0x101
+#define TURN_BLACK              0x102
+
+constexpr char startFEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 // Manages pieces on the board and controlling some of its rendering
 class BoardManager {
 private:
@@ -22,9 +27,23 @@ private:
 
     // Store pieces
     std::vector<Piece> m_pieces;
+    Piece* m_heldPiece;
+    bool m_doesHeldPieceExists;
 
     // Stores colours for rendering values
     COLOUR m_dark, m_light;
+
+    // Stores whos turn it is to move
+    int m_turn;
+
+    // For board to know if it needs to check positioning
+    static POINT s_mouse;
+    static bool s_isClicked;
+
+    // ----- Destruction -----
+
+    // Deletes all pieces from array
+    void deletePieces();
 
 public:
     // ----- Creation -----
@@ -32,7 +51,7 @@ public:
     // Setup board
     // fillStyle - BOARD_FILL_MANUAL or BOARD_FILL_AUTOMATIC
     // boardColourStyle - select colours to render board with
-    BoardManager(GLenum fillStyle, GLenum boardColourStyle);
+    BoardManager(GLenum boardColourStyle, const std::string& FEN = startFEN);
 
     // ----- Read -----
 
@@ -43,19 +62,21 @@ public:
     // Can be done alone to show grid colours selection
     void board();
 
+    // Checks if there are any actions the board needs to take before rendering
+    void check();
+
     // ----- Update -----
     
     // Selects colours for board rendering
     void setColour(GLuint boardColourStyle);
 
-    // Add an already created piece to board
-    void add(Piece& piece);
-
     // Create and add a piece to the board
     void add(GLenum type, GLenum colour, GLint x, GLint y);
-    
-    // Reset board to base position
-    void resetBoard();
+
+    // Sets board up with FEN string
+    void setBoard(const std::string& FEN);
+
+    static void clicked();
 
     // ----- Destruction -----
 

@@ -5,6 +5,11 @@ GLuint Library::texSlot = GL_TEXTURE0;
 // OpenGL-based functions
 
 GLuint Library::genTex(GLuint type, GLuint colour) {
+    // Error checking for incorrectly created pieces
+    if (!type || !colour) {
+        return 0;
+    }
+
     // Create string for loading image
     std::string path = "../lib/pieces/";
     switch (type) {
