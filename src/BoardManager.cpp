@@ -1,5 +1,7 @@
 #include "BoardManager.h"
 
+#include "WindowManager.h"
+
 // ----- Creation -----
 
 bool BoardManager::s_isClicked = false;
@@ -10,10 +12,11 @@ BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
     this->setBoard(FEN);
 
     // Selects board colouring
-    this->setColour(boardColourStyle);
+    this->setBoardColour(boardColourStyle);
 
-    this->m_heldPiece = nullptr;
-    this->m_doesHeldPieceExists = false;
+    // Setting
+    this->m_heldPiece = 0;
+    this->m_heldPieceOriginPos = { 0, 0 };
 }
 
 // ----- Read -----
@@ -23,18 +26,25 @@ void BoardManager::show() {
     this->m_renderer.background(this->m_dark);
     
     // Render board
-    this->board();
+    this->showBoard();
 
     // Render each piece
-    for (Piece& piece : this->m_pieces) {
-        if (piece.isHeld()) {
-            piece.move();
+    //Render board
+    for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        // If there is a piece on the grid square
+        if (this->m_grid[i]) {
+            this->m_renderer.render(this->m_grid[i], i % GRID_SIZE, i / GRID_SIZE);
         }
-        this->m_renderer.render(piece);
+    }
+
+    // Renders held piece
+    if (this->m_heldPiece) {
+        POINT mousePos = WindowManager::cursorPos();
+        this->m_renderer.render(this->m_heldPiece, mousePos.x, mousePos.y);
     }
 }
 
-void BoardManager::board() {
+void BoardManager::showBoard() {
     // Scales board based on smaller side so it stays square
     POINT winSize = WindowManager::winSize();
     GLfloat scale = Library::min(winSize);
@@ -54,42 +64,30 @@ void BoardManager::check() {
     if (!s_isClicked) {
         return;
     }
-
     s_isClicked = false;
 
     // Determine in which square was clicked
     POINT winSize = WindowManager::winSize();
-    GLfloat scale = Library::min(winSize);
-    scale /= GRID_SIZE;
-    POINT mPos = { (int)(1 + s_mouse.x / scale), (int)(1 + GRID_SIZE - (s_mouse.y / scale)) };
+    GLfloat min = Library::min(winSize);
+    GLfloat scale = min / GRID_SIZE;
 
-    // Determine if a piece or square was clicked
-    for (Piece& piece : this->m_pieces) {
-        POINT pPos = piece.GridPos();
+    POINT gridPos = { (int)(s_mouse.x / scale), (int)(GRID_SIZE - (s_mouse.y / scale)) };
 
-        // Piece is clicked
-        if (this->m_heldPiece == nullptr && pPos.x == mPos.x && pPos.y == mPos.y) {
-            this->m_heldPiece = &piece;
-            this->m_heldPiece->pickup();
-            this->m_doesHeldPieceExists = true;
-            break;
-        }
-        // Square is clicked
-        else if (m_doesHeldPieceExists) {
-            // Checks if a valid square is selected before releasing the piece
-            if (this->m_heldPiece->setGridPos(mPos)) {
-                this->m_heldPiece->putdown();
-                this->m_heldPiece = nullptr;
-                this->m_doesHeldPieceExists = false;
-                break;
-            }
-        }
+    // If a piece is held, try to release it
+    if (this->m_heldPiece) {
+        this->release(gridPos);
+        return;
+    }
+    // Selects piece from grid position
+    if (this->m_grid[gridPos.y * GRID_SIZE + gridPos.x]) {
+        // Stores held piece
+        this->hold(gridPos);
     }
 }
 
 // ----- Update -----
 
-void BoardManager::setColour(GLuint boardColourStyle) {
+void BoardManager::setBoardColour(GLuint boardColourStyle) {
     switch (boardColourStyle) {
     case BOARD_BLACK_WHITE:
         this->m_dark.r = 0.f;
@@ -127,6 +125,15 @@ void BoardManager::setColour(GLuint boardColourStyle) {
         this->m_light.g = 0.8f;
         this->m_light.b = 1.0f;
         break;
+    case BOARD_RED_GOLD:
+        this->m_dark.r = 0.8f;
+        this->m_dark.g = 0.0f;
+        this->m_dark.b = 0.0f;
+
+        this->m_light.r = 0.8f;
+        this->m_light.g = 0.6f;
+        this->m_light.b = 0.3f;
+        break;
     // Defaults black and white
     default:
         this->m_dark.r = 0.f;
@@ -140,21 +147,25 @@ void BoardManager::setColour(GLuint boardColourStyle) {
     }
 }
 
-void BoardManager::add(GLenum type, GLenum colour, GLint x, GLint y) {
-    Piece piece(type, colour, x, y);
-    this->m_pieces.push_back(piece);
+void BoardManager::clearBoard() {
+    for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        this->m_grid[i] = 0;
+    }
 }
 
 void BoardManager::setBoard(const std::string& FEN) {
-    this->deletePieces();
+    this->clearBoard();
 
     // Loop through each index
     // Starts from top left, goes to bottom right
-    int x = 1, y = 8;
+    int x = 0, y = 7;
     for (char c : FEN) {
+        if (c == ' ') {
+            return;
+        }
         // Checks for rank change key
         if (c == '/') {
-            x = 1;
+            x = 0;
             y--;
             continue;
         }
@@ -165,31 +176,101 @@ void BoardManager::setBoard(const std::string& FEN) {
         }
         // Determine what char it is
         else {
-            int colour = (isupper(c) ? PIECE_WHITE : PIECE_BLACK);
-            char type = tolower(c);
-            this->add(type, colour, x, y);
+            int pieceColour = (isupper(c) ? PIECE_WHITE : PIECE_BLACK);
+            int pieceType;
+            switch(c) {
+            case 'p':
+            case 'P':
+                pieceType = PIECE_PAWN;
+                break;
+            case 'n':
+            case 'N':
+                pieceType = PIECE_KNIGHT;
+                break;
+            case 'b':
+            case 'B':
+                pieceType = PIECE_BISHOP;
+                break;
+            case 'r':
+            case 'R':
+                pieceType = PIECE_ROOK;
+                break;
+            case 'q':
+            case 'Q':
+                pieceType = PIECE_QUEEN;
+                break;
+            case 'k':
+            case 'K':
+                pieceType = PIECE_KING;
+                break;
+            default:
+                // If type is undetermined, still increase index but move on
+                x++;
+                continue;
+            }
+            this->m_grid[y * GRID_SIZE + x] = pieceColour | pieceType;
             x++;
         }
     }
 }
 
-void BoardManager::clicked() {
+void BoardManager::clicked(POINT mousePos) {
     s_isClicked = true;
-    double x, y;
-    WindowManager::cursorPos(x, y);
-    s_mouse = { (int)x, (int)y };
+    s_mouse = mousePos;
+
+    // Determines if height must be adjusted
+    POINT winSize = WindowManager::winSize();
+    if (winSize.y > winSize.x) {
+        std::cout << winSize.y - winSize.x << std::endl;
+        s_mouse.y -= (winSize.y - winSize.x);
+    }
+}
+
+// ----- Update ----- Hidden -----
+
+void BoardManager::hold(POINT gridPos) {
+    // Extra error checking to not pull pieces out of the void
+    if (s_mouse.y > 0) {
+        this->m_heldPiece = HELD_MASK | this->m_grid[gridPos.y * GRID_SIZE + gridPos.x];
+        this->m_heldPieceOriginPos = { gridPos.x, gridPos.y };
+        this->m_grid[gridPos.y * GRID_SIZE + gridPos.x] = 0;
+    }
+}
+
+void BoardManager::release(POINT gridPos) {
+    // Check if colours match
+    int pieceColour = m_heldPiece & COLOUR_MASK;
+    int potentialNewSquare = this->m_grid[gridPos.y * GRID_SIZE + gridPos.x];
+    int potentialColour = potentialNewSquare & COLOUR_MASK;
+    if (pieceColour == potentialColour) {
+        // Put piece back to where it came from
+        this->m_grid[this->m_heldPieceOriginPos.y * GRID_SIZE + this->m_heldPieceOriginPos.x] = this->m_heldPiece ^ HELD_MASK;
+        this->m_heldPiece = 0;
+        return;
+    }
+
+    // Check if click is within board parameters (in case of window size change)
+    POINT winSize = WindowManager::winSize();
+    int min = Library::min(winSize);
+    if (s_mouse.x > min || s_mouse.y < 0) {
+        // Put piece back to where it came from
+        std::cout << winSize.y - min << std::endl;
+        this->m_grid[this->m_heldPieceOriginPos.y * GRID_SIZE + this->m_heldPieceOriginPos.x] = this->m_heldPiece ^ HELD_MASK;
+        this->m_heldPiece = 0;
+        return;
+    }
+
+    // Colours are not the same, check if valid move
+    // Not implemented yet
+
+    // Square is valid, place piece
+    this->m_grid[gridPos.y * GRID_SIZE + gridPos.x] = this->m_heldPiece ^ HELD_MASK;
+    this->m_heldPiece = 0;
 }
 
 //  ----- Destruction -----
 
-void BoardManager::deletePieces() {
-    for (Piece& piece : this->m_pieces) {
-        DeleteBufferObjects(piece);
-    }
-    this->m_pieces.clear();
-}
-
 BoardManager::~BoardManager() {
-    this->deletePieces();
+    // Nothing todo
 }
 

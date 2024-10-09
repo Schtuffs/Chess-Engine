@@ -2,8 +2,9 @@
 #include <glad/glad.h>
 #include <vector>
 
-#include "Piece.h"
 #include "BoardManager.h"
+#include "WindowManager.h"
+#include "FpsTracker.h"
 
 int main(void) {
     // Window initialization functions
@@ -11,7 +12,7 @@ int main(void) {
     WindowManager::initCallbacks();
 
     // Create board manager
-    BoardManager boardManager(BOARD_BROWN_BROWN);
+    BoardManager boardManager(BOARD_RED_GOLD);
 
     // Main window loop
     while(!WindowManager::shouldClose()) {

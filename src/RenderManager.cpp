@@ -1,5 +1,9 @@
 #include "RenderManager.h"
 
+#include "BindManager.h"
+#include "WindowManager.h"
+#include "BoardManager.h"
+
 // Creation functions
 
 std::string RenderManager::read(const std::string& filename) {
@@ -82,13 +86,15 @@ RenderManager::RenderManager(const std::string& vertFile, const std::string& fra
     }
 
     // Create VAO for own renderings
-    this->m_vao = Library::genVAO();
+    glGenVertexArrays(1, &this->m_vao);
 
     // Create EBO for own renderings
-    this->m_vbo = Library::genVBO();
+    glGenBuffers(1, &this->m_vbo);
 
     // Create VBO for drawing board
-    this->m_ebo = Library::genEBO();
+    glGenBuffers(1, &this->m_ebo);
+
+    Library::genTex(this->m_pieceTextures);
 }
 
 void RenderManager::compileErrors(GLuint id, GLuint type) {
@@ -163,68 +169,62 @@ void RenderManager::rect(COLOUR& colour, int x, int y, int width, int height) {
     BindManager::UnbindAll();
 }
 
-void RenderManager::render(Piece& piece) {
-    // Return if the renderer was not properly made
-    if (!this->m_created) {
-        std::cout << "Cannot render piece: renderer not properly initialized..." << std::endl;
-        return;
-    }
+void RenderManager::render(int piece, int x, int y) {
+    int held = piece & HELD_MASK;
+    // Gets piece information
+    int type = TYPE_MASK & piece;
+    
+    // Colour will add 6 indexes to texture array if black
+    int colour = ((piece & BLACK_MASK) == PIECE_BLACK ? 6 : 0);
+    int index = type + colour - 1;
 
     // For making pieces scale with screen size changes
     POINT winSize = WindowManager::winSize();
     GLfloat scale = Library::min(winSize);
     scale /= GRID_SIZE;
 
-    // For rendering in vector-space instead of pixel-space
-    GLfloat x, y, sx, sy;
-    if (!piece.isHeld()) {
-        // Draws based on grid position
-        POINT pos = piece.GridPos();
-        x = Library::map((int)((pos.x - 1) * scale), 0, winSize.x, -1, 1);
-        y = Library::map((int)((pos.y - 1) * scale), 0, winSize.y, -1, 1);
-        sx = Library::map((int)(scale), 0, winSize.x, 0, 2);
-        sy = Library::map((int)(scale), 0, winSize.y, 0, 2);
+    GLfloat sx, sy, sw, sh;
+    // Calculate render location
+    // If a piece is not held, calculate based on grid position
+    if (!held) {
+        sx = Library::map((int)(x * scale), 0, winSize.x, -1, 1);
+        sy = Library::map((int)(y * scale), 0, winSize.y, -1, 1);
+        sw = Library::map((int)(scale), 0, winSize.x, 0, 2);
+        sh = Library::map((int)(scale), 0, winSize.y, 0, 2);
     }
+    // Piece is held, calculate off mouse position
     else {
-        // Uses physical piece position on screen to draw
-        POINT pos = piece.PhysPos();
-        x =  Library::map((int)(pos.x), 0, winSize.x, -1, 1);
-        y =  Library::map((int)(pos.y), 0, winSize.y, -1, 1);
-        sx = Library::map((int)(scale), 0, winSize.x,  0, 2);
-        sy = Library::map((int)(scale), 0, winSize.y,  0, 2);
-
-        // Centers piece around the mouse
-        x -= sx / 2;
-        y -= sy / 2;
+        sx = Library::map((int)(  x  ), 0, winSize.x, -1, 1);
+        sy = Library::map((int)(  y  ), 0, winSize.y, 1, -1);
+        sw = Library::map((int)(scale), 0, winSize.x, 0, 2);
+        sh = Library::map((int)(scale), 0, winSize.y, 0, 2);
+        sx -= sw / 2;
+        sy -= sh / 2;
     }
 
     GLfloat vertices[] = {
-        // positions          // texture coords
-        x,      y,      0.0f, 0.0f, 1.0f,   // top left 
-        x + sx, y,      0.0f, 1.0f, 1.0f,   // top right
-        x,      y + sy, 0.0f, 0.0f, 0.0f,   // bottom left
-        x + sx, y + sy, 0.0f, 1.0f, 0.0f,   // bottom right
+        // positions      // texture coords
+        sx,      sy,      0.0f, 0.0f, 1.0f,   // top left 
+        sx + sw, sy,      0.0f, 1.0f, 1.0f,   // top right
+        sx,      sy + sh, 0.0f, 0.0f, 0.0f,   // bottom left
+        sx + sw, sy + sh, 0.0f, 1.0f, 0.0f,   // bottom right
     };
 
     GLuint indices[] = {0, 1, 2, 1, 2, 3};
 
-    // Start rendering process
-    // Binding objects
-    BindManager::BindVAO(piece.VAO());
-    BindManager::BindVBO(piece.VBO(), vertices, sizeof(vertices));
-    BindManager::BindEBO(piece.EBO(), indices, sizeof(indices));
+    // Binding render objects
+    BindManager::BindVAO(this->m_vao);
+    BindManager::BindVBO(this->m_vbo, vertices, sizeof(vertices));
+    BindManager::BindEBO(this->m_ebo, indices, sizeof(indices));
 
     // Binding attributes
     BindManager::LinkAttrib(0, 3, GL_FLOAT, 5 * sizeof(GLfloat), (void*)0);
     BindManager::LinkAttrib(2, 2, GL_FLOAT, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 
-    // Unbind all after changes
-    BindManager::UnbindAll();
-
     // Rendering
     BindManager::Activate(this->m_shaderTexID);
-    BindManager::BindTEX(piece.TexID());
-    BindManager::BindVAO(piece.VAO());
+    BindManager::BindTEX(this->m_pieceTextures[index]);
+    BindManager::BindVAO(this->m_vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // Unbind
@@ -233,18 +233,15 @@ void RenderManager::render(Piece& piece) {
 
 // Destruction functions
 
-void DeleteBufferObjects(Piece& piece) {
-    glDeleteTextures(1, &piece.m_texID);
-    glDeleteVertexArrays(1, &piece.m_vao);
-    glDeleteBuffers(1, &piece.m_vbo);
-    glDeleteBuffers(1, &piece.m_ebo);
-}
-
 RenderManager::~RenderManager() {
+    // Deletes buffer objects
     glDeleteProgram(this->m_shaderTexID);
     glDeleteProgram(this->m_shaderColID);
     glDeleteVertexArrays(1, &this->m_vao);
     glDeleteBuffers(1, &this->m_vbo);
     glDeleteBuffers(1, &this->m_ebo);
+
+    // Deletes texture buffers
+    glDeleteTextures(TOTAL_TEXTURES, this->m_pieceTextures);
 }
 

@@ -4,16 +4,14 @@
 #include <fstream>
 #include <glad/glad.h>
 
-#include "Piece.h"
 #include "Library.h"
-#include "BindManager.h"
-#include "WindowManager.h"
 
 // Manages the rendering of items to the screen, such as squares or pieces
 class RenderManager {
 private:
     GLuint m_shaderTexID, m_shaderColID, m_vao, m_vbo, m_ebo;
     bool m_created;
+    GLuint m_pieceTextures[TOTAL_TEXTURES];
 
     // ----- Creation -----
 
@@ -40,14 +38,11 @@ public:
     void rect(COLOUR& colour, int x, int y, int width, int height);
 
     // Renders a piece to the screen
-    void render(Piece& piece);
+    void render(int piece, int x, int y);
 
     // ----- Destruction -----
 
     // Deletes this objects rendering buffers
     ~RenderManager();
 };
-
-// Deletes rendering buffers of a piece
-void DeleteBufferObjects(Piece& piece);
 

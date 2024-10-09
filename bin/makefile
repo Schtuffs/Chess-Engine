@@ -9,7 +9,7 @@ FLAGS	 = -std=c++17 -I$(INCLUDE) -L../lib
 CXXFLAGS = -c -Wall $(FLAGS)
 LDFLAGS	 = $(FLAGS) # -mwindows
 
-OBJECTS	 = glad.o stb_image.o main.o Library.o WindowManager.o RenderManager.o BindManager.o BoardManager.o Callbacks.o FpsTracker.o Piece.o
+OBJECTS	 = glad.o stb_image.o main.o Library.o WindowManager.o RenderManager.o BindManager.o BoardManager.o Callbacks.o FpsTracker.o
 
 all: $(OBJECTS)
 	$(CXX) $(LDFLAGS) $(OBJECTS) -lglfw3dll -o $(EXE)
@@ -42,9 +42,6 @@ Callbacks.o: $(SRC)/Callbacks.cpp $(INCLUDE)/Callbacks.h
 	$(CXX) $(CXXFLAGS) $<
 
 FpsTracker.o: $(SRC)/FpsTracker.cpp $(INCLUDE)/FpsTracker.h
-	$(CXX) $(CXXFLAGS) $<
-
-Piece.o: $(SRC)/Piece.cpp $(INCLUDE)/Piece.h
 	$(CXX) $(CXXFLAGS) $<
 
 clean:

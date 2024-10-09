@@ -74,6 +74,11 @@ namespace WindowManager {
         glfwGetCursorPos(s_window, &x, &y);
     }
 
+    POINT cursorPos() {
+        double x, y;
+        glfwGetCursorPos(s_window, &x, &y);
+        return POINT{ (int)x, (int)y };
+    }
     // Useful functions
 
     void resize(int width, int height) {

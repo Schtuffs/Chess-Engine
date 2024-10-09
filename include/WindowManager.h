@@ -32,6 +32,7 @@ namespace WindowManager {
 
     // Gives data for current mouse position
     void cursorPos(double& x, double& y);
+    POINT cursorPos();
 
     // ----- Useful -----
 
