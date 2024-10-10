@@ -49,6 +49,9 @@ namespace WindowManager {
     // Stores the window size for easy access later
     void resize(int width, int height);
 
+    // Allows quick reset of board
+    void reset();
+
     // ----- Destruction -----
 
     // Closes OpenGL functions and frees the memory

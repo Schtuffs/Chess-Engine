@@ -25,7 +25,8 @@ void MoveManager::calculateMoves(POINT startPos, int piece, const int* grid) {
 
     int type = this->m_piece & MASK_TYPE;
     if (type == PIECE_KING) {
-        this->calculateKingMoves();
+        std::vector<int> enemyMoves = this->calculateEnemyMoves(piece & MASK_COLOUR);
+        this->calculateKingMoves(enemyMoves);
         return;
     }
 
@@ -51,7 +52,7 @@ void MoveManager::calculateMoves(POINT startPos, int piece, const int* grid) {
 
 int MoveManager::isValidMove(int testPos) {
     for (int pos : this->m_validMoves) {
-        if (testPos == pos) {
+        if (testPos == (pos & MASK_LOCATION)) {
             return this->m_piece;
         }
     }
@@ -88,9 +89,9 @@ int MoveManager::addMove(int index) {
 
 // ----- Update ----- Hidden -----
 
-void MoveManager::calculateKingMoves() {
+void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
     // Top left to bottom right search
-     for (int y = 1; y >= -1; y--) {
+    for (int y = 1; y >= -1; y--) {
         for (int x = -1; x <= 1; x++) {
             int index = (this->m_startPos.y * GRID_SIZE + this->m_startPos.x) + (y * GRID_SIZE) + x;
 
@@ -118,9 +119,70 @@ void MoveManager::calculateKingMoves() {
                 continue;
             }
 
-            this->addMove(index);
+            // Makes sure move is not being attacked
+            bool validMove = true;
+            for (int move : enemyMoves) {
+                if (move == index) {
+                    validMove = false;
+                    break;
+                }
+            }
+            // If move is still valid, add it
+            if (validMove) {
+                this->addMove(index);
+            }
         }
-     }
+    }
+}
+
+std::vector<int> MoveManager::calculateEnemyMoves(int colour) {
+    std::vector<int> moves;
+    
+    // Loop through grid
+    for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        // Colours don't match, calculate moves
+        if (!this->m_grid[i] || (this->m_grid[i] & MASK_COLOUR) == colour) {
+            continue;
+        }
+        // Call a movemanager for current piece
+        MoveManager enemy;
+        POINT start = { i % GRID_SIZE, i / GRID_SIZE };
+        std::vector<int> calculated;
+
+        // Special case for pawn
+        if ((this->m_grid[i] & MASK_TYPE) == PIECE_PAWN) {
+            enemy.calculatePawnAttackingMoves(this->m_grid[i], i);
+            calculated = enemy.getMoves();
+        }
+        // Special case for king
+        else if ((this->m_grid[i] & MASK_TYPE) == PIECE_KING) {
+            calculated.clear();
+            enemy.calculateKingAttackingMoves(this->m_grid[i], i);
+            calculated = enemy.getMoves();
+        }
+        // Calculates moves for all other pieces
+        else {
+            enemy.calculateMoves(start, this->m_grid[i], this->m_grid);
+            calculated = enemy.getMoves();
+        }
+
+        // Loop through each calculated value
+        for (int calc : calculated) {
+            // Loop through each previously calculated value
+            for (int move : moves) {
+                // If the numbers are equal, no need to add
+                if (calc == move) {
+                    calc = -1;
+                    break;
+                }
+            }
+            // If move is not already in list, add it
+            if (calc != -1) {
+                moves.push_back(calc);
+            }
+        }
+    }
+    return moves;
 }
 
 void MoveManager::calculateCardinalMoves() {
@@ -244,21 +306,26 @@ void MoveManager::calculatePawnMoves() {
             this->m_validMoves.push_back(indexCheck);
 
             // Double move check
-            if (this->m_startPos.y == 1) {
-                if (this->m_grid[indexCheck + GRID_SIZE] == 0)
+            if ((this->m_piece & MASK_PAWN_FIRST_MOVE)) {
+                if (this->m_grid[indexCheck + GRID_SIZE] == 0) {
                     this->m_validMoves.push_back(indexCheck + GRID_SIZE);
+                }
             }
         }
         // Capture checks
         // Left
         int otherColour = this->m_grid[indexCheck - 1] & MASK_COLOUR;
-        if (this->m_grid[indexCheck - 1] != 0 && colour != otherColour) {
-            this->m_validMoves.push_back(indexCheck - 1);
+        if (indexCheck % GRID_SIZE != 0) {
+            if (this->m_grid[indexCheck - 1] != 0 && colour != otherColour) {
+                this->m_validMoves.push_back(indexCheck - 1);
+            }
         }
         // Right
         otherColour = this->m_grid[indexCheck + 1] & MASK_COLOUR;
-        if (this->m_grid[indexCheck + 1] != 0 && colour != otherColour) {
-            this->m_validMoves.push_back(indexCheck + 1);
+        if (indexCheck % GRID_SIZE != GRID_SIZE - 1) {
+            if (this->m_grid[indexCheck + 1] != 0 && colour != otherColour) {
+                this->m_validMoves.push_back(indexCheck + 1);
+            }
         }
     }
     else {
@@ -268,7 +335,7 @@ void MoveManager::calculatePawnMoves() {
             this->m_validMoves.push_back(indexCheck);
 
             // Double move check
-            if (this->m_startPos.y == 6) {
+            if ((this->m_piece & MASK_PAWN_FIRST_MOVE)) {
                 if (this->m_grid[indexCheck - GRID_SIZE] == 0)
                     this->m_validMoves.push_back(indexCheck - GRID_SIZE);
             }
@@ -276,13 +343,48 @@ void MoveManager::calculatePawnMoves() {
         // Capture checks
         // Left
         int otherColour = this->m_grid[indexCheck - 1] & MASK_COLOUR;
-        if (this->m_grid[indexCheck - 1] != 0 && colour != otherColour) {
-            this->m_validMoves.push_back(indexCheck - 1);
+        if (indexCheck % GRID_SIZE != 0) {
+            if (this->m_grid[indexCheck - 1] != 0 && colour != otherColour) {
+                this->m_validMoves.push_back(indexCheck - 1);
+            }
         }
         // Right
         otherColour = this->m_grid[indexCheck + 1] & MASK_COLOUR;
-        if (this->m_grid[indexCheck + 1] != 0 && colour != otherColour) {
-            this->m_validMoves.push_back(indexCheck + 1);
+        if (indexCheck % GRID_SIZE != GRID_SIZE - 1) {
+            if (this->m_grid[indexCheck + 1] != 0 && colour != otherColour) {
+                this->m_validMoves.push_back(indexCheck + 1);
+            }
+        }
+    }
+}
+
+// Attacking move functions
+
+void MoveManager::calculatePawnAttackingMoves(int piece, int index) {
+    int colour = piece & MASK_COLOUR;
+
+    // White piece
+    if (colour == PIECE_WHITE) {
+        int indexCheck = index + GRID_SIZE;
+        // Left
+        this->m_validMoves.push_back(indexCheck - 1);
+        // Right
+        this->m_validMoves.push_back(indexCheck + 1);
+    }
+    // Black piece
+    else {
+        int indexCheck = index - GRID_SIZE;
+        // Left
+        this->m_validMoves.push_back(indexCheck - 1);
+        // Right
+        this->m_validMoves.push_back(indexCheck + 1);
+    }
+}
+
+void MoveManager::calculateKingAttackingMoves(int piece, int index) {
+    for (int y = 1; y >= -1; y--) {
+        for (int x = -1; x <= 1; x++) {
+            this->m_validMoves.push_back(index + (y * GRID_SIZE) + x);
         }
     }
 }

@@ -43,11 +43,12 @@ constexpr char startFEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 #define MASK_TYPE               0b000000111
 #define MASK_COLOUR             (MASK_BLACK | MASK_WHITE)
 #define MASK_HELD               0b000100000
+#define MASK_MIN_FLAGS          (MASK_HELD | MASK_COLOUR | MASK_TYPE)
 #define MASK_PINNED             0b001000000
+#define MASK_LOCATION           0b000111111
 
 // Piece specific masks
 #define MASK_PAWN_FIRST_MOVE    0b010000000
-#define MASK_PAWN_EN_PASSENT    0b100000000
 #define MASK_KING_CASTLE_KING   0b010000000
 #define MASK_KING_CASTLE_QUEEN  0b100000000
 #define MASK_CASTLING           (MASK_KING_CASTLE_KING | MASK_KING_CASTLE_QUEEN)
@@ -83,17 +84,19 @@ private:
     // ----- Update -----
 
     // Sets metadata for board upon loading
-    void setMetadata(std::string& metadata);
+    void getMetadata(std::string& metadata);
+
+    // Adds the metadata from FEN string to board
+    void setMetadata();
 
     // Grabs a piece and holds it
     void hold(POINT& gridPos);
 
     // Releases the piece
-    void release(const POINT& gridPos);
+    void release(const POINT& gridPos, int piece, bool moved);
 
-    // Determine if piece can be dropped in clicked location
-    // Will put back to where picked up if location is invalid
-    bool canPutPieceDown(POINT& gridPos);
+    // Removes any flags from piece
+    void removeFlags(int index);
 
 public:
     // ----- Creation -----

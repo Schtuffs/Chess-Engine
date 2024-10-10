@@ -39,7 +39,7 @@ void BoardManager::show() {
         }
     }
 
-    // Renders held piece
+    // Renders held piece so its on top
     if (this->m_heldPiece) {
         POINT mousePos = WindowManager::cursorPos();
         this->m_renderer.render(this->m_heldPiece, mousePos.x, mousePos.y);
@@ -61,6 +61,7 @@ void BoardManager::showBoard() {
             if (m_heldPiece) {
                 auto moves = this->m_moveManager.getMoves();
                 for (int move : moves) {
+                    move &= MASK_MIN_FLAGS;
                     if (index == move) {
                         mask.r = 0.3f;
                         mask.g = -0.3f;
@@ -97,11 +98,16 @@ void BoardManager::check() {
 
     // If a piece is held, try to release it
     if (this->m_heldPiece) {
-        if (this->canPutPieceDown(gridPos)) {
+        // Store piece incase of valid
+        int piece = this->m_moveManager.isValidMove(gridPos);
+        if (piece) {
             // Only switch turn if piece was placed elsewhere
-            this->release(gridPos);
             if (this->m_heldPieceOriginPos != gridPos) {
                 this->m_currentTurn = (this->m_currentTurn == PIECE_WHITE ? PIECE_BLACK : PIECE_WHITE);
+                this->release(gridPos, piece, true);
+            }
+            else {
+                this->release(gridPos, piece, false);
             }
         }
         return;
@@ -205,7 +211,7 @@ void BoardManager::setBoard(const std::string& FEN) {
     std::string metadata = FEN.substr(FEN.find(' ') + 1);
 
     // Load metadata
-    this->setMetadata(metadata);
+    this->getMetadata(metadata);
 
     // Loop through each index
     // Starts from top left, goes to bottom right
@@ -264,6 +270,7 @@ void BoardManager::setBoard(const std::string& FEN) {
             x++;
         }
     }
+    this->setMetadata();
 }
 
 void BoardManager::clicked(const POINT& mousePos) {
@@ -279,7 +286,7 @@ void BoardManager::clicked(const POINT& mousePos) {
 
 // ----- Update ----- Hidden -----
 
-void BoardManager::setMetadata(std::string& metadata) {
+void BoardManager::getMetadata(std::string& metadata) {
     int currentField = 0;
     for (size_t i = 0; i < metadata.length(); i++) {
         // Increase field upon finding space
@@ -353,6 +360,48 @@ void BoardManager::setMetadata(std::string& metadata) {
     }
 }
 
+void BoardManager::setMetadata() {
+    // Adds king metadata
+    for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        int pieceType = this->m_grid[i] & MASK_TYPE;
+        int pieceColour = this->m_grid[i] & MASK_COLOUR;
+
+        // King metadata
+        if (pieceType == PIECE_KING) {
+            // White meta
+            if (pieceColour == PIECE_WHITE) {
+                if (this->m_castling[BOARD_CASTLING_WHITE_KING]) {
+                    this->m_grid[i] |= MASK_KING_CASTLE_KING;
+                }
+                else if (this->m_castling[BOARD_CASTLING_WHITE_QUEEN]) {
+                    this->m_grid[i] |= MASK_KING_CASTLE_KING;
+                }
+            }
+            // Black meta
+            else {
+                if (this->m_castling[BOARD_CASTLING_BLACK_KING]) {
+                    this->m_grid[i] |= MASK_KING_CASTLE_KING;
+                }
+                else if (this->m_castling[BOARD_CASTLING_BLACK_QUEEN]) {
+                    this->m_grid[i] |= MASK_KING_CASTLE_KING;
+                }
+            }
+        }
+
+        // Pawn metadata
+        else if (pieceType == PIECE_PAWN) {
+            // White pawn on start square
+            int y = i / GRID_SIZE;
+            if (y == 1 && pieceColour == PIECE_WHITE) {
+                this->m_grid[i] |= MASK_PAWN_FIRST_MOVE;
+            }
+            else if (y == 6 && pieceColour == PIECE_BLACK) {
+                this->m_grid[i] |= MASK_PAWN_FIRST_MOVE;
+            }
+        }
+    }
+}
+
 void BoardManager::hold(POINT& gridPos) {
     // Checks piece colour
     int piece = this->m_grid[gridPos.y * GRID_SIZE + gridPos.x];
@@ -365,54 +414,49 @@ void BoardManager::hold(POINT& gridPos) {
         this->m_heldPiece = MASK_HELD | piece;
         this->m_heldPieceOriginPos = { gridPos.x, gridPos.y };
         this->m_grid[gridPos.y * GRID_SIZE + gridPos.x] = 0;
-
-        // Calculates valid moves
-
     }
 }
 
-void BoardManager::release(const POINT& gridPos) {
+void BoardManager::release(const POINT& gridPos, int piece, bool moved) {
     // Put held piece down on specified square
     int gridIndex = gridPos.y * GRID_SIZE + gridPos.x;
-    this->m_grid[gridIndex] = this->m_heldPiece ^ MASK_HELD;
+    this->m_grid[gridIndex] = piece ^ MASK_HELD;
     this->m_heldPiece = 0;
+    if (moved) {
+        this->removeFlags(gridIndex);
+    }
 }
 
-bool BoardManager::canPutPieceDown(POINT& gridPos) {
-    // Check if the move is legal
-    if (this->m_moveManager.isValidMove(gridPos)) {
-        return true;
+void BoardManager::removeFlags(int index) {
+    // Remove phantom
+    if (this->m_grid[m_phantomLocation] == PIECE_PHANTOM) {
+        this->m_grid[m_phantomLocation] = 0;
+        this->m_phantomLocation = -1;
     }
-    return false;
-    // Check if piece is placed back where it came from
-    int gridIndex = this->m_heldPieceOriginPos.y * GRID_SIZE + this->m_heldPieceOriginPos.x;
-    int placeIndex = gridPos.y * GRID_SIZE + gridPos.x;
-    if (placeIndex == gridIndex) {
-        // Puts piece down, but will not swap turns
-        this->release(gridPos);
-        return false;
-    }
-
-    // Check if colours match
-    int pieceColour = m_heldPiece & MASK_COLOUR;
-    int potentialNewSquare = this->m_grid[gridPos.y * GRID_SIZE + gridPos.x];
-    int potentialColour = potentialNewSquare & MASK_COLOUR;
-    if (pieceColour == potentialColour) {
-        return false;
-    }
-
-    // Check if click is within board parameters (in case of window size change)
-    POINT winSize = WindowManager::winSize();
-    int min = Library::min(winSize);
-    if (s_mouse.x > min || s_mouse.y < 0) {
-        return false;
-    }
-
     
+    // Piece information
+    int piece = this->m_grid[index];
+    int type = piece & MASK_TYPE;
+    int colour = piece & MASK_COLOUR;
     
-
-    // Square is valid, place piece
-    return true;
+    switch (type) {
+    case PIECE_PAWN:
+        // Remove first move flag
+        if ((piece & MASK_PAWN_FIRST_MOVE)) {
+            this->m_grid[index] = (piece ^ MASK_PAWN_FIRST_MOVE);
+            // Add phantom piece for white
+            if (index > GRID_SIZE * 2 && colour == PIECE_WHITE) {
+                this->m_grid[index - GRID_SIZE] = PIECE_PHANTOM;
+                this->m_phantomLocation = index - GRID_SIZE;
+            }
+            // Add phantom piece for black
+            else if (index < (GRID_SIZE * GRID_SIZE) - (GRID_SIZE * 2) && colour == PIECE_BLACK) {
+                this->m_grid[index + GRID_SIZE] = PIECE_PHANTOM;
+                this->m_phantomLocation = index + GRID_SIZE;
+                std::cout << m_phantomLocation << std::endl;
+            }
+        }
+    }
 }
 
 //  ----- Destruction -----

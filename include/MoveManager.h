@@ -24,7 +24,10 @@ private:
     // ----- Update -----
 
     // Calculates moves for king
-    void calculateKingMoves();
+    void calculateKingMoves(std::vector<int>& enemyMoves);
+
+    // Calculates enemy moves so king can't move into their squares
+    std::vector<int> calculateEnemyMoves(int colour);
 
     // Cardinal movement generation
     void calculateCardinalMoves();
@@ -37,6 +40,12 @@ private:
 
     // Calculates moves for pawns
     void calculatePawnMoves();
+
+    // Used for calculating invalid king moves
+    void calculatePawnAttackingMoves(int piece, int index);
+
+    // Calculates all attacking moves for king
+    void calculateKingAttackingMoves(int piece, int index);
 
 public:
     // ----- Creation -----

@@ -5,12 +5,19 @@
 #include "WindowManager.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    // Close on escape
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
 
+    // Display FPS on backtick
     if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS) {
         FpsTracker::showFPS();
+    }
+
+    // Reset on r
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+        WindowManager::reset();
     }
 }
 
