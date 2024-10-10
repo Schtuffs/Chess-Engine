@@ -6,6 +6,8 @@
 #define GRID_SIZE   8
 #define TOTAL_TEXTURES  12
 
+#define CHAR_TO_INT     97
+
 typedef struct colourHolder {
     GLfloat r, g, b;
 }COLOUR;
@@ -28,7 +30,12 @@ public:
     // Quick math functions
     static GLfloat min(int x, int y);
     static GLfloat min(POINT& pos);
+    static int charToInt(char c);
     
     static GLfloat map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax);
 };
+
+bool operator==(POINT& p1, POINT& p2);
+bool operator!=(POINT& p1, POINT& p2);
+COLOUR operator+(COLOUR& c1, COLOUR& c2);
 

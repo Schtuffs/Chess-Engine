@@ -1,21 +1,26 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <vector>
 
 #include "RenderManager.h"
+#include "MoveManager.h"
 
 // Board Defines
-#define BOARD_FILL_MANUAL       0x20
-#define BOARD_FILL_AUTOMATIC    0x21
 
-#define BOARD_BLACK_WHITE       0x30
-#define BOARD_BROWN_BROWN       0x31
-#define BOARD_GREEN_CREAM       0x32
-#define BOARD_DBLUE_LBLUE       0x33
-#define BOARD_RED_GOLD          0x34
+#define BOARD_BLACK_WHITE           0x30
+#define BOARD_BROWN_BROWN           0x31
+#define BOARD_GREEN_CREAM           0x32
+#define BOARD_DBLUE_LBLUE           0x33
+#define BOARD_RED_GOLD              0x34
 
-#define TURN_WHITE              0x101
-#define TURN_BLACK              0x102
+#define TURN_WHITE                  0x101
+#define TURN_BLACK                  0x102
+
+#define BOARD_CASTLING_BLACK_KING   0x0
+#define BOARD_CASTLING_BLACK_QUEEN  0x1
+#define BOARD_CASTLING_WHITE_KING   0x2
+#define BOARD_CASTLING_WHITE_QUEEN  0x3
 
 constexpr char startFEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -33,11 +38,19 @@ constexpr char startFEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 #define PIECE_WHITE     0x08
 #define PIECE_BLACK     0x10
 
-#define BLACK_MASK      0b010000
-#define WHITE_MASK      0b001000
-#define TYPE_MASK       0b000111
-#define COLOUR_MASK     (BLACK_MASK | WHITE_MASK)
-#define HELD_MASK       0b100000
+#define MASK_BLACK              0b000010000
+#define MASK_WHITE              0b000001000
+#define MASK_TYPE               0b000000111
+#define MASK_COLOUR             (MASK_BLACK | MASK_WHITE)
+#define MASK_HELD               0b000100000
+#define MASK_PINNED             0b001000000
+
+// Piece specific masks
+#define MASK_PAWN_FIRST_MOVE    0b010000000
+#define MASK_PAWN_EN_PASSENT    0b100000000
+#define MASK_KING_CASTLE_KING   0b010000000
+#define MASK_KING_CASTLE_QUEEN  0b100000000
+#define MASK_CASTLING           (MASK_KING_CASTLE_KING | MASK_KING_CASTLE_QUEEN)
 
 // Manages pieces on the board and controlling some of its rendering
 class BoardManager {
@@ -45,16 +58,23 @@ private:
     // To deal with all rendering functions
     RenderManager m_renderer;
 
+    // Calculates moves
+    MoveManager m_moveManager;
+
     // Store pieces and their information
     int m_grid[GRID_SIZE * GRID_SIZE];
-    int m_heldPiece;
+    int m_heldPiece, m_phantomLocation;
     POINT m_heldPieceOriginPos;
+    std::vector<int> m_validMoves;
+
+    // Castling data
+    bool m_castling[4];
+    
+    // Stores whos turn it is to move
+    int m_currentTurn, m_totalTurns, m_50moveRule;
 
     // Stores colours for rendering values
     COLOUR m_dark, m_light;
-
-    // Stores whos turn it is to move
-    int m_turn;
 
     // For board to know if it needs to check positioning
     static POINT s_mouse;
@@ -62,12 +82,18 @@ private:
 
     // ----- Update -----
 
+    // Sets metadata for board upon loading
+    void setMetadata(std::string& metadata);
+
     // Grabs a piece and holds it
-    void hold(POINT gridPos);
+    void hold(POINT& gridPos);
+
+    // Releases the piece
+    void release(const POINT& gridPos);
 
     // Determine if piece can be dropped in clicked location
     // Will put back to where picked up if location is invalid
-    void release(POINT gridPos);
+    bool canPutPieceDown(POINT& gridPos);
 
 public:
     // ----- Creation -----
@@ -100,7 +126,7 @@ public:
     // Clears everything off of board
     void clearBoard();
 
-    static void clicked(POINT mousePos);
+    static void clicked(const POINT& mousePos);
 
     // ----- Destruction -----
 

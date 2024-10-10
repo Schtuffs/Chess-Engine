@@ -1,8 +1,13 @@
 #include "WindowManager.h"
 
+#include "Callbacks.h"
+
 namespace WindowManager {
     static POINT s_winSize;
     static GLFWwindow* s_window;
+
+    // Holds pointer to board for showing
+    static BoardManager* s_board;
 
     // Creation
 
@@ -19,6 +24,9 @@ namespace WindowManager {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+        // For debugging
+        // glfwWindowHint(GLFW_FLOATING, true);
 
         // Create the window
         GLFWwindow* window = glfwCreateWindow(s_winSize.x, s_winSize.y, "Chess Engine", NULL, NULL);
@@ -50,6 +58,7 @@ namespace WindowManager {
         glfwSetMouseButtonCallback(s_window, mouse_button_callback);
     	glfwSetCharCallback(s_window, character_callback);
         glfwSetFramebufferSizeCallback(s_window, framebuffer_size_callback);
+        glfwSetWindowRefreshCallback(s_window, window_refresh_callback);
     }
 
     // Reading
@@ -62,7 +71,8 @@ namespace WindowManager {
         return s_winSize;
     }
 
-    void swap() {
+    void show() {
+        s_board->show();
         glfwSwapBuffers(s_window);
     }
 
@@ -79,6 +89,7 @@ namespace WindowManager {
         glfwGetCursorPos(s_window, &x, &y);
         return POINT{ (int)x, (int)y };
     }
+    
     // Useful functions
 
     void resize(int width, int height) {
@@ -86,12 +97,15 @@ namespace WindowManager {
         s_winSize.y = height;
     }
 
+    void setBoard(BoardManager& board) {
+        s_board = &board;
+    }
+    
     // Destruction
 
     void close() {
         glfwDestroyWindow(s_window);
         glfwTerminate();
     }
-
 }
 

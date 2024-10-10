@@ -10,9 +10,11 @@ int main(void) {
     // Window initialization functions
     WindowManager::init();
     WindowManager::initCallbacks();
+    
 
     // Create board manager
-    BoardManager boardManager(BOARD_RED_GOLD);
+    BoardManager board(BOARD_DBLUE_LBLUE);
+    WindowManager::setBoard(board);
 
     // Main window loop
     while(!WindowManager::shouldClose()) {
@@ -20,13 +22,10 @@ int main(void) {
         FpsTracker::fps();
 
         // Checks for any actions needed to be taken
-        boardManager.check();
-        
-        // Show board and pieces
-        boardManager.show();
+        board.check();
 
         // OpenGL functions
-        WindowManager::swap();
+        WindowManager::show();
         WindowManager::poll();
     }
 

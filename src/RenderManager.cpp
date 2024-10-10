@@ -170,12 +170,17 @@ void RenderManager::rect(COLOUR& colour, int x, int y, int width, int height) {
 }
 
 void RenderManager::render(int piece, int x, int y) {
-    int held = piece & HELD_MASK;
+    // Check to not try to render phantom pieces
+    if (piece >= PIECE_PHANTOM) {
+        return;
+    }
+    
+    int held = piece & MASK_HELD;
     // Gets piece information
-    int type = TYPE_MASK & piece;
+    int type = MASK_TYPE & piece;
     
     // Colour will add 6 indexes to texture array if black
-    int colour = ((piece & BLACK_MASK) == PIECE_BLACK ? 6 : 0);
+    int colour = ((piece & MASK_BLACK) == PIECE_BLACK ? 6 : 0);
     int index = type + colour - 1;
 
     // For making pieces scale with screen size changes

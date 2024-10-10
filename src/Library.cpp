@@ -74,6 +74,11 @@ GLfloat Library::min(POINT& pos) {
     return Library::min(pos.x, pos.y);
 }
 
+int Library::charToInt(char c) {
+    return (tolower(c) - CHAR_TO_INT);
+
+}
+
 GLfloat Library::map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax) {
     value -= currentMin;
 
@@ -87,5 +92,29 @@ GLfloat Library::map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfl
     value += newMin;
 
     return value;
+}
+
+bool operator==(POINT &p1, POINT &p2) {
+    if (p1.x != p2.x)
+        return false;
+    if (p1.y != p2.y)
+        return false;
+    return true;
+}
+
+bool operator!=(POINT &p1, POINT &p2) {
+    if (p1.x != p2.x)
+        return true;
+    if (p1.y != p2.y)
+        return true;
+    return false;
+}
+
+COLOUR operator+(COLOUR& c1, COLOUR& c2) {
+    COLOUR c;
+    c.r = c1.r + c2.r;
+    c.g = c1.g + c2.g;
+    c.b = c1.b + c2.b;
+    return c;
 }
 
