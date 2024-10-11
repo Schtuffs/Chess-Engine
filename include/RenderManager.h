@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 
 #include "Library.h"
+#include "Defines.h"
 
 // Manages the rendering of items to the screen, such as squares or pieces
 class RenderManager {
@@ -38,7 +39,7 @@ public:
     void rect(COLOUR& colour, int x, int y, int width, int height);
 
     // Renders a piece to the screen
-    void render(int piece, int x, int y);
+    void render(PIECE piece, int x, int y);
 
     // ----- Destruction -----
 

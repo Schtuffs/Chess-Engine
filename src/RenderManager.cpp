@@ -3,6 +3,7 @@
 #include "BindManager.h"
 #include "WindowManager.h"
 #include "BoardManager.h"
+#include "Piece.h"
 
 // Creation functions
 
@@ -169,19 +170,19 @@ void RenderManager::rect(COLOUR& colour, int x, int y, int width, int height) {
     BindManager::UnbindAll();
 }
 
-void RenderManager::render(int piece, int x, int y) {
+void RenderManager::render(PIECE piece, int x, int y) {
     // Check to not try to render phantom pieces
     if (piece >= PIECE_PHANTOM) {
         return;
     }
     
-    int held = piece & MASK_HELD;
+    FLAG held = Piece::getFlag(piece, MASK_HELD);
     // Gets piece information
-    int type = MASK_TYPE & piece;
+    FLAG type = Piece::getFlag(piece, MASK_TYPE);
     
     // Colour will add 6 indexes to texture array if black
-    int colour = ((piece & MASK_BLACK) == PIECE_BLACK ? 6 : 0);
-    int index = type + colour - 1;
+    FLAG colour = (Piece::getFlag(piece, MASK_COLOUR) == PIECE_BLACK ? 6 : 0);
+    INDEX index = type + colour - 1;
 
     // For making pieces scale with screen size changes
     POINT winSize = WindowManager::winSize();

@@ -1,6 +1,7 @@
 #include "MoveManager.h"
 
 #include "BoardManager.h"
+#include "Piece.h"
 
 // ----- Creation -----
 
@@ -10,7 +11,7 @@ MoveManager::MoveManager() {
 
 // ----- Read -----
 
-void MoveManager::calculateMoves(int startIndex, int piece, const int* grid) {
+void MoveManager::calculateMoves(INDEX startIndex, PIECE piece, const PIECE* grid) {
     // Init data
     this->m_startIndex = startIndex;
     this->m_piece = piece;
@@ -50,26 +51,31 @@ void MoveManager::calculateMoves(int startIndex, int piece, const int* grid) {
     }
 }
 
-int MoveManager::isValidMove(int testPos) {
-    for (int pos : this->m_validMoves) {
-        if (testPos == (pos & MASK_LOCATION)) {
-            return (this->m_piece | (pos & MASK_FLAGS));
+PIECE MoveManager::isValidMove(INDEX testPos) {
+    for (INDEX pos : this->m_validMoves) {
+        if (testPos == Piece::getFlag(pos, MASK_LOCATION)) {
+            Piece::addFlag(&this->m_piece, Piece::getFlag(pos, MASK_FLAGS));
+            return this->m_piece;
         }
     }
     return 0;
 }
 
-int MoveManager::isValidMove(const POINT& testPos) {
+PIECE MoveManager::isValidMove(const POINT& testPos) {
     return this->isValidMove(testPos.y * GRID_SIZE + testPos.x);
 }
 
-std::vector<int> MoveManager::getMoves() {
+std::vector<INDEX> MoveManager::getMoves() {
     return this->m_validMoves;
+}
+
+std::vector<INDEX> MoveManager::getDefendingMoves() {
+    return this->m_defendingMoves;
 }
 
 // ----- Read ----- Hidden -----
 
-int MoveManager::addMove(int index) {
+int MoveManager::addMove(INDEX index) {
     // Ensure index is valid
     if (0 > index || index >= GRID_SIZE * GRID_SIZE) {
         return MOVE_END;
@@ -89,12 +95,16 @@ int MoveManager::addMove(int index) {
         // Pieces are not the same colour, add move
         this->m_validMoves.push_back(index);
     }
+    // Colours match, move is defending
+    else {
+        this->m_defendingMoves.push_back(index);
+    }
     return MOVE_END;
 }
 
 // ----- Update ----- Hidden -----
 
-void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
+void MoveManager::calculateKingMoves(std::vector<INDEX>& enemyMoves) {
     // Top left to bottom right search
     for (int y = 1; y >= -1; y--) {
         for (int x = -1; x <= 1; x++) {
@@ -138,11 +148,23 @@ void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
             }
         }
     }
+    
+    this->calculateKingCastling();
+}
 
+void MoveManager::calculateKingCastling() { 
     // Check castling kingside
     bool canCastle = true;
-    if (this->m_piece & MASK_KING_CASTLE_KING) {
-        for (int i = this->m_startIndex + 1; i % GRID_SIZE != GRID_SIZE - 1; i++) {
+    if (Piece::getFlag(this->m_piece, MASK_KING_CASTLE_KING)) {
+        for (int i = this->m_startIndex + 1; i % GRID_SIZE < GRID_SIZE; i++) {
+            // Checks if piece at index is a rook
+            if (Piece::getFlag(this->m_grid[i], MASK_TYPE) == PIECE_ROOK) {
+                // Check if rook has castling ability flag
+                if (Piece::getFlag(this->m_grid[i], MASK_ROOK_CAN_CASTLE)) {
+                    break;
+                }
+            }
+            // If piece detected, cannot castle
             if (this->m_grid[i]) {
                 canCastle = false;
                 break;
@@ -154,8 +176,16 @@ void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
     }
     // Check castling queensize
     canCastle = true;
-    if ((this->m_piece & MASK_KING_CASTLE_QUEEN)) {
-        for (int i = this->m_startIndex - 1; i % GRID_SIZE != 0; i--) {
+    if (Piece::getFlag(this->m_piece, MASK_KING_CASTLE_QUEEN)) {
+        for (int i = this->m_startIndex - 1; i % GRID_SIZE >= 0; i--) {
+            // Checks if piece at index is a rook
+            if (Piece::getFlag(this->m_grid[i], MASK_TYPE) == PIECE_ROOK) {
+                // Check if rook has castling ability flag
+                if (Piece::getFlag(this->m_grid[i], MASK_ROOK_CAN_CASTLE)) {
+                    break;
+                }
+            }
+            // If piece detected, cannot castle
             if (this->m_grid[i]) {
                 canCastle = false;
                 break;
@@ -167,27 +197,26 @@ void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
     }
 }
 
-std::vector<int> MoveManager::calculateEnemyMoves(int colour) {
-    std::vector<int> moves;
+std::vector<INDEX> MoveManager::calculateEnemyMoves(FLAG colour) {
+    std::vector<INDEX> moves;
     
     // Loop through grid
     for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
         // Colours don't match, calculate moves
-        if (!this->m_grid[i] || (this->m_grid[i] & MASK_COLOUR) == colour) {
+        if (!this->m_grid[i] || Piece::getFlag(this->m_grid[i], MASK_COLOUR) == colour) {
             continue;
         }
         // Call a movemanager for current piece
         MoveManager enemy;
-        std::vector<int> calculated;
+        std::vector<INDEX> calculated;
 
-        // Special case for pawn
-        if ((this->m_grid[i] & MASK_TYPE) == PIECE_PAWN) {
+        // Case for pawn
+        if (Piece::getFlag(this->m_grid[i], MASK_TYPE) == PIECE_PAWN) {
             enemy.calculatePawnAttackingMoves(this->m_grid[i], i);
             calculated = enemy.getMoves();
         }
-        // Special case for king
-        else if ((this->m_grid[i] & MASK_TYPE) == PIECE_KING) {
-            calculated.clear();
+        // Case for king
+        else if (Piece::getFlag(this->m_grid[i], MASK_TYPE) == PIECE_KING) {
             enemy.calculateKingAttackingMoves(this->m_grid[i], i);
             calculated = enemy.getMoves();
         }
@@ -195,7 +224,11 @@ std::vector<int> MoveManager::calculateEnemyMoves(int colour) {
         else {
             enemy.calculateMoves(i, this->m_grid[i], this->m_grid);
             calculated = enemy.getMoves();
+            auto def = enemy.getDefendingMoves();
+            calculated.insert(calculated.end(), def.begin(), def.end());
         }
+        // Remove first index, which is the current piece position
+        
 
         // Loop through each calculated value
         for (int calc : calculated) {
@@ -392,7 +425,7 @@ void MoveManager::calculatePawnMoves() {
 
 // Attacking move functions
 
-void MoveManager::calculatePawnAttackingMoves(int piece, int index) {
+void MoveManager::calculatePawnAttackingMoves(PIECE piece, INDEX index) {
     int colour = piece & MASK_COLOUR;
 
     // White piece
@@ -413,7 +446,7 @@ void MoveManager::calculatePawnAttackingMoves(int piece, int index) {
     }
 }
 
-void MoveManager::calculateKingAttackingMoves(int piece, int index) {
+void MoveManager::calculateKingAttackingMoves(PIECE piece, INDEX index) {
     for (int y = 1; y >= -1; y--) {
         for (int x = -1; x <= 1; x++) {
             this->m_validMoves.push_back(index + (y * GRID_SIZE) + x);

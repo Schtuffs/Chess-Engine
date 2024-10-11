@@ -4,33 +4,32 @@
 #include <vector>
 
 #include "Library.h"
-
-#define MOVE_CONTINUE   1
-#define MOVE_END        2
-
-#define MASK_LOCATION   0b000111111
-#define MASK_FLAGS      0b111000000
+#include "Defines.h"
 
 class MoveManager {
 private:
     int m_startIndex;
-    std::vector<int> m_validMoves;
+    std::vector<INDEX> m_validMoves;
+    std::vector<INDEX> m_defendingMoves;
 
-    int m_piece;
-    const int *m_grid;
+    PIECE m_piece;
+    const PIECE *m_grid;
 
     // ----- Read -----
 
     // Compares the values to determine if move should be added
-    int addMove(int index);
+    int addMove(INDEX index);
 
     // ----- Update -----
 
     // Calculates moves for king
-    void calculateKingMoves(std::vector<int>& enemyMoves);
+    void calculateKingMoves(std::vector<INDEX>& enemyMoves);
+
+    // Calculates the potential castling moves for the king
+    void calculateKingCastling();
 
     // Calculates enemy moves so king can't move into their squares
-    std::vector<int> calculateEnemyMoves(int colour);
+    std::vector<INDEX> calculateEnemyMoves(FLAG colour);
 
     // Cardinal movement generation
     void calculateCardinalMoves();
@@ -45,10 +44,10 @@ private:
     void calculatePawnMoves();
 
     // Used for calculating invalid king moves
-    void calculatePawnAttackingMoves(int piece, int index);
+    void calculatePawnAttackingMoves(PIECE piece, INDEX index);
 
     // Calculates all attacking moves for king
-    void calculateKingAttackingMoves(int piece, int index);
+    void calculateKingAttackingMoves(PIECE piece, INDEX index);
 
 public:
     // ----- Creation -----
@@ -58,15 +57,16 @@ public:
     // ----- Read -----
     
     // Calculates all valid moves for given piece
-    void calculateMoves(int startIndex, int piece, const int* grid);
+    void calculateMoves(INDEX startIndex, PIECE piece, const PIECE* grid);
 
     // Returns piece if a given move is in the valid moves
-    int isValidMove(const POINT& testPos);
+    PIECE isValidMove(const POINT& testPos);
 
     // Returns piece if a given move is in the valid moves
-    int isValidMove(int testPos);
+    PIECE isValidMove(INDEX testPos);
 
-    std::vector<int> getMoves();
+    std::vector<INDEX> getMoves();
+    std::vector<INDEX> getDefendingMoves();
 
     // ----- Update -----
 

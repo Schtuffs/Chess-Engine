@@ -3,10 +3,7 @@
 #include <iostream>
 #include <glad/glad.h>
 
-#define GRID_SIZE   8
-#define TOTAL_TEXTURES  12
-
-#define CHAR_TO_INT     97
+#include "Defines.h"
 
 typedef struct colourHolder {
     GLfloat r, g, b;

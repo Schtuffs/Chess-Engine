@@ -13,7 +13,7 @@ int main(void) {
     WindowManager::initCallbacks();
 
     // Create board manager
-    BoardManager board(BOARD_DBLUE_LBLUE);
+    BoardManager board(BOARD_BROWN_BROWN);
     WindowManager::setBoard(board);
 
     // Create EventManager
