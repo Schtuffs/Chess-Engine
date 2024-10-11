@@ -10,9 +10,9 @@ MoveManager::MoveManager() {
 
 // ----- Read -----
 
-void MoveManager::calculateMoves(POINT startPos, int piece, const int* grid) {
+void MoveManager::calculateMoves(int startIndex, int piece, const int* grid) {
     // Init data
-    this->m_startPos = startPos;
+    this->m_startIndex = startIndex;
     this->m_piece = piece;
     
     // Copy grid data
@@ -21,7 +21,7 @@ void MoveManager::calculateMoves(POINT startPos, int piece, const int* grid) {
     this->m_validMoves.clear();
     
     // Add starting position no matter what
-    this->addMove(this->m_startPos.y * GRID_SIZE + this->m_startPos.x);
+    this->addMove(this->m_startIndex);
 
     int type = this->m_piece & MASK_TYPE;
     if (type == PIECE_KING) {
@@ -53,7 +53,7 @@ void MoveManager::calculateMoves(POINT startPos, int piece, const int* grid) {
 int MoveManager::isValidMove(int testPos) {
     for (int pos : this->m_validMoves) {
         if (testPos == (pos & MASK_LOCATION)) {
-            return this->m_piece;
+            return (this->m_piece | (pos & MASK_FLAGS));
         }
     }
     return 0;
@@ -70,6 +70,11 @@ std::vector<int> MoveManager::getMoves() {
 // ----- Read ----- Hidden -----
 
 int MoveManager::addMove(int index) {
+    // Ensure index is valid
+    if (0 > index || index >= GRID_SIZE * GRID_SIZE) {
+        return MOVE_END;
+    }
+    
     // No piece, add move
     if (this->m_grid[index] == 0 || this->m_grid[index] == PIECE_PHANTOM) {
         this->m_validMoves.push_back(index);
@@ -93,7 +98,7 @@ void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
     // Top left to bottom right search
     for (int y = 1; y >= -1; y--) {
         for (int x = -1; x <= 1; x++) {
-            int index = (this->m_startPos.y * GRID_SIZE + this->m_startPos.x) + (y * GRID_SIZE) + x;
+            int index = (this->m_startIndex) + (y * GRID_SIZE) + x;
 
             // Don't add start position
             if (y == 0 && x == 0) {
@@ -101,21 +106,21 @@ void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
             }
 
             // Top side check
-            if ((this->m_startPos.y == GRID_SIZE - 1) && (y == 1)) {
+            if ((this->m_startIndex / GRID_SIZE == GRID_SIZE - 1) && (y == 1)) {
                 // Increase y to remove out of out of bounds error
                 break;
             }
             // Bottom side check
-            if ((this->m_startPos.y == 0) && (y == -1)) {
-                // All points have been checked, return
-                return;
+            if ((this->m_startIndex / GRID_SIZE == 0) && (y == -1)) {
+                // All points have been checked, break
+                break;
             }
             // Right Side check
-            if ((this->m_startPos.x == GRID_SIZE - 1) && (x == 1)) {
+            if ((this->m_startIndex % GRID_SIZE == GRID_SIZE - 1) && (x == 1)) {
                 continue;
             }
             // Left side check
-            if ((this->m_startPos.x == 0) && (x == -1)) {
+            if ((this->m_startIndex % GRID_SIZE == 0) && (x == -1)) {
                 continue;
             }
 
@@ -133,6 +138,33 @@ void MoveManager::calculateKingMoves(std::vector<int>& enemyMoves) {
             }
         }
     }
+
+    // Check castling kingside
+    bool canCastle = true;
+    if (this->m_piece & MASK_KING_CASTLE_KING) {
+        for (int i = this->m_startIndex + 1; i % GRID_SIZE != GRID_SIZE - 1; i++) {
+            if (this->m_grid[i]) {
+                canCastle = false;
+                break;
+            }
+        }
+        if (canCastle) {
+            this->addMove(this->m_startIndex + 2);
+        }
+    }
+    // Check castling queensize
+    canCastle = true;
+    if ((this->m_piece & MASK_KING_CASTLE_QUEEN)) {
+        for (int i = this->m_startIndex - 1; i % GRID_SIZE != 0; i--) {
+            if (this->m_grid[i]) {
+                canCastle = false;
+                break;
+            }
+        }
+        if (canCastle) {
+            this->addMove(this->m_startIndex - 2);
+        }
+    }
 }
 
 std::vector<int> MoveManager::calculateEnemyMoves(int colour) {
@@ -146,7 +178,6 @@ std::vector<int> MoveManager::calculateEnemyMoves(int colour) {
         }
         // Call a movemanager for current piece
         MoveManager enemy;
-        POINT start = { i % GRID_SIZE, i / GRID_SIZE };
         std::vector<int> calculated;
 
         // Special case for pawn
@@ -162,7 +193,7 @@ std::vector<int> MoveManager::calculateEnemyMoves(int colour) {
         }
         // Calculates moves for all other pieces
         else {
-            enemy.calculateMoves(start, this->m_grid[i], this->m_grid);
+            enemy.calculateMoves(i, this->m_grid[i], this->m_grid);
             calculated = enemy.getMoves();
         }
 
@@ -187,7 +218,7 @@ std::vector<int> MoveManager::calculateEnemyMoves(int colour) {
 
 void MoveManager::calculateCardinalMoves() {
     // Each direction separately
-    int index = this->m_startPos.y * GRID_SIZE + this->m_startPos.x;
+    int index = this->m_startIndex;
     // Up
     for (int i = index + GRID_SIZE; i < GRID_SIZE * GRID_SIZE; i += GRID_SIZE) {
         if (this->addMove(i) == MOVE_END) {
@@ -219,7 +250,7 @@ void MoveManager::calculateCardinalMoves() {
 
 void MoveManager::calculateDiagonalMoves() {
     // Each direction separately
-    int index = this->m_startPos.y * GRID_SIZE + this->m_startPos.x;
+    int index = this->m_startIndex;
     // Up left
     for (int i = index + GRID_SIZE - 1; (i < GRID_SIZE * GRID_SIZE) && (i % GRID_SIZE != GRID_SIZE - 1); i += GRID_SIZE - 1) {
         if (this->addMove(i) == MOVE_END) {
@@ -250,7 +281,7 @@ void MoveManager::calculateDiagonalMoves() {
 }
 
 void MoveManager::calculateKnightMoves() {
-    int index = this->m_startPos.y * GRID_SIZE + this->m_startPos.x;
+    int index = this->m_startIndex;
     
     // Add move return value is unimportant since knights don't keep going in same direction
 
@@ -299,16 +330,16 @@ void MoveManager::calculatePawnMoves() {
     int colour = this->m_piece & MASK_COLOUR;
 
     // White piece
-    int indexCheck = this->m_startPos.y * GRID_SIZE + this->m_startPos.x + GRID_SIZE;
+    int indexCheck = this->m_startIndex + GRID_SIZE;
     if (colour == PIECE_WHITE) {
         // Single move check
         if (this->m_grid[indexCheck] == 0) {
             this->m_validMoves.push_back(indexCheck);
 
             // Double move check
-            if ((this->m_piece & MASK_PAWN_FIRST_MOVE)) {
+            if (this->m_piece & MASK_PAWN_FIRST_MOVE) {
                 if (this->m_grid[indexCheck + GRID_SIZE] == 0) {
-                    this->m_validMoves.push_back(indexCheck + GRID_SIZE);
+                    this->m_validMoves.push_back((indexCheck | MASK_PAWN_EN_PASSENT) + GRID_SIZE);
                 }
             }
         }
@@ -329,15 +360,16 @@ void MoveManager::calculatePawnMoves() {
         }
     }
     else {
-        indexCheck = this->m_startPos.y * GRID_SIZE + this->m_startPos.x - GRID_SIZE;
+        indexCheck = this->m_startIndex - GRID_SIZE;
         // Single move check
         if (this->m_grid[indexCheck] == 0) {
             this->m_validMoves.push_back(indexCheck);
 
             // Double move check
-            if ((this->m_piece & MASK_PAWN_FIRST_MOVE)) {
-                if (this->m_grid[indexCheck - GRID_SIZE] == 0)
-                    this->m_validMoves.push_back(indexCheck - GRID_SIZE);
+            if (this->m_piece & MASK_PAWN_FIRST_MOVE) {
+                if (this->m_grid[indexCheck - GRID_SIZE] == 0) {
+                    this->m_validMoves.push_back((indexCheck | MASK_PAWN_EN_PASSENT) - GRID_SIZE);
+                }
             }
         }
         // Capture checks

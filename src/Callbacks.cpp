@@ -1,6 +1,6 @@
 #include "Callbacks.h"
 
-#include "BoardManager.h"
+#include "EventManager.h"
 #include "FpsTracker.h"
 #include "WindowManager.h"
 
@@ -25,8 +25,7 @@ void character_callback(GLFWwindow* window, GLuint codepoint) {}
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        POINT pos = WindowManager::cursorPos();
-        BoardManager::clicked(pos);
+        EventManager::eventClick(WindowManager::cursorPos());
     }
 }
 

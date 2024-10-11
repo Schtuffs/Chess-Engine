@@ -29,8 +29,13 @@ public:
 
     // Quick math functions
     static GLfloat min(int x, int y);
-    static GLfloat min(POINT& pos);
+    static GLfloat min(POINT pos);
     static int charToInt(char c);
+
+    // Grid conversions
+    static POINT physToGrid(POINT phys);
+    static int gridToIndex(POINT grid);
+    static int physToIndex(POINT phys);
     
     static GLfloat map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax);
 };

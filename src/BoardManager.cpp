@@ -5,9 +5,6 @@
 
 // ----- Creation -----
 
-bool BoardManager::s_isClicked = false;
-POINT BoardManager::s_mouse = { 0, 0 };
-
 BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
     // Setup board with FEN string
     this->setBoard(FEN);
@@ -17,7 +14,7 @@ BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
 
     // Setting
     this->m_heldPiece = 0;
-    this->m_heldPieceOriginPos = { 0, 0 };
+    this->m_heldPieceOriginPos = 0;
 }
 
 // ----- Read -----
@@ -52,6 +49,7 @@ void BoardManager::showBoard() {
     GLfloat scale = Library::min(winSize);
     scale /= GRID_SIZE;
 
+    // Loop through each grid index
     for (int y = 0; y < GRID_SIZE; y++) {
         for (int x = 0; x < GRID_SIZE; x++) {
             int index = y * GRID_SIZE + x;
@@ -70,6 +68,7 @@ void BoardManager::showBoard() {
                 }
             }
 
+            // Render colour based on evenness
             if ((x + y) % 2) {
                 COLOUR dark = this->m_dark + mask;
                 this->m_renderer.rect(dark, x * scale, y * scale, scale, scale);
@@ -82,41 +81,31 @@ void BoardManager::showBoard() {
     }
 }
 
-void BoardManager::check() {
-    // For dealing with clicks
-    if (!s_isClicked) {
-        return;
-    }
-    s_isClicked = false;
-
-    // Determine in which square was clicked
-    POINT winSize = WindowManager::winSize();
-    GLfloat min = Library::min(winSize);
-    GLfloat scale = min / GRID_SIZE;
-
-    POINT gridPos = { (int)(s_mouse.x / scale), (int)(GRID_SIZE - (s_mouse.y / scale)) };
-
+void BoardManager::check(int index) {
     // If a piece is held, try to release it
     if (this->m_heldPiece) {
         // Store piece incase of valid
-        int piece = this->m_moveManager.isValidMove(gridPos);
+        int piece = this->m_moveManager.isValidMove(index);
         if (piece) {
             // Only switch turn if piece was placed elsewhere
-            if (this->m_heldPieceOriginPos != gridPos) {
+            if (this->m_heldPieceOriginPos != index) {
                 this->m_currentTurn = (this->m_currentTurn == PIECE_WHITE ? PIECE_BLACK : PIECE_WHITE);
-                this->release(gridPos, piece, true);
+                this->release(index, piece, true);
             }
             else {
-                this->release(gridPos, piece, false);
+                this->release(index, piece, false);
             }
         }
         return;
     }
     // Selects piece from grid position
-    if (this->m_grid[gridPos.y * GRID_SIZE + gridPos.x]) {
-        // Stores held piece
-        this->hold(gridPos);
-        this->m_moveManager.calculateMoves(gridPos, this->m_heldPiece, this->m_grid);
+    if (0 <= index && index < GRID_SIZE * GRID_SIZE) {
+        if (this->m_grid[index]) {
+            // Stores held piece
+            if (this->hold(index)) {
+                this->m_moveManager.calculateMoves(index, this->m_heldPiece, this->m_grid);
+            }
+        }
     }
 }
 
@@ -201,7 +190,7 @@ void BoardManager::clearBoard() {
 
     // Unholds piece
     this->m_heldPiece = 0;
-    this->m_heldPieceOriginPos = { 0, 0 };
+    this->m_heldPieceOriginPos = 0;
 }
 
 void BoardManager::setBoard(const std::string& FEN) {
@@ -271,17 +260,6 @@ void BoardManager::setBoard(const std::string& FEN) {
         }
     }
     this->setMetadata();
-}
-
-void BoardManager::clicked(const POINT& mousePos) {
-    s_isClicked = true;
-    s_mouse = mousePos;
-
-    // Determines if height must be adjusted
-    POINT winSize = WindowManager::winSize();
-    if (winSize.y > winSize.x) {
-        s_mouse.y -= (winSize.y - winSize.x);
-    }
 }
 
 // ----- Update ----- Hidden -----
@@ -402,28 +380,34 @@ void BoardManager::setMetadata() {
     }
 }
 
-void BoardManager::hold(POINT& gridPos) {
+bool BoardManager::hold(int index) {
     // Checks piece colour
-    int piece = this->m_grid[gridPos.y * GRID_SIZE + gridPos.x];
+    int piece = this->m_grid[index];
     if (this->m_currentTurn != (piece & MASK_COLOUR)) {
-        return;
+        return false;
     }
 
-    // Extra error checking to not pull pieces out of the void
-    if (s_mouse.y > 0) {
-        this->m_heldPiece = MASK_HELD | piece;
-        this->m_heldPieceOriginPos = { gridPos.x, gridPos.y };
-        this->m_grid[gridPos.y * GRID_SIZE + gridPos.x] = 0;
-    }
+    this->m_heldPiece = MASK_HELD | piece;
+    this->m_heldPieceOriginPos = index;
+    this->m_grid[index] = 0;
+
+    return true;
 }
 
-void BoardManager::release(const POINT& gridPos, int piece, bool moved) {
+void BoardManager::release(int index, int piece, bool moved) {
+    // Check if pawn
+    if ((this->m_heldPiece & MASK_TYPE) == PIECE_PAWN) {
+        // Check if phantom
+        if (this->m_grid[index] == PIECE_PHANTOM){ 
+            this->m_grid[m_phantomAttack] = 0;
+        }
+    }
+
     // Put held piece down on specified square
-    int gridIndex = gridPos.y * GRID_SIZE + gridPos.x;
-    this->m_grid[gridIndex] = piece ^ MASK_HELD;
+    this->m_grid[index] = piece ^ MASK_HELD;
     this->m_heldPiece = 0;
     if (moved) {
-        this->removeFlags(gridIndex);
+        this->removeFlags(index);
     }
 }
 
@@ -435,27 +419,120 @@ void BoardManager::removeFlags(int index) {
     }
     
     // Piece information
-    int piece = this->m_grid[index];
-    int type = piece & MASK_TYPE;
-    int colour = piece & MASK_COLOUR;
-    
+    int type = this->m_grid[index] & MASK_TYPE;
     switch (type) {
     case PIECE_PAWN:
-        // Remove first move flag
-        if ((piece & MASK_PAWN_FIRST_MOVE)) {
-            this->m_grid[index] = (piece ^ MASK_PAWN_FIRST_MOVE);
+        this->removePawnFlags(index);
+        break;
+    case PIECE_ROOK:
+        this->removeRookFlags(index);
+        break;
+    case PIECE_KING:
+        this->removeKingFlags(index);
+        break;
+    }
+}
+
+void BoardManager::removePawnFlags(int index) {
+    // Piece information
+    int piece = this->m_grid[index];
+    int colour = piece & MASK_COLOUR;
+
+    // Remove first move flag
+    if ((piece & MASK_PAWN_FIRST_MOVE)) {
+        // Removes first move mask
+        this->m_grid[index] = (piece ^ MASK_PAWN_FIRST_MOVE);
+
+        if (this->m_grid[index] & MASK_PAWN_EN_PASSENT) {
+            // Remove en passent
+            this->m_grid[index] ^= MASK_PAWN_EN_PASSENT;
+            
             // Add phantom piece for white
-            if (index > GRID_SIZE * 2 && colour == PIECE_WHITE) {
+            if (colour == PIECE_WHITE) {
                 this->m_grid[index - GRID_SIZE] = PIECE_PHANTOM;
                 this->m_phantomLocation = index - GRID_SIZE;
             }
             // Add phantom piece for black
-            else if (index < (GRID_SIZE * GRID_SIZE) - (GRID_SIZE * 2) && colour == PIECE_BLACK) {
+            else {
                 this->m_grid[index + GRID_SIZE] = PIECE_PHANTOM;
                 this->m_phantomLocation = index + GRID_SIZE;
-                std::cout << m_phantomLocation << std::endl;
+            }
+            // Set phantom attack
+            this->m_phantomAttack = index;
+        }
+    }
+}
+
+void BoardManager::removeKnightFlags(int index){ 
+
+}
+
+void BoardManager::removeBishopFlags(int index) {
+
+}
+
+void BoardManager::removeRookFlags(int index) {
+    // Piece information
+    int colour = this->m_grid[index] & MASK_COLOUR;
+    
+    // Remove castling rights from the king
+    if (colour == PIECE_WHITE) {
+        // Default white king square
+        if ((this->m_grid[4] & MASK_TYPE) == PIECE_KING) {
+            // Remove queenside from castling rights
+            if ((this->m_grid[0] & MASK_TYPE) != PIECE_ROOK) {
+                // Check if bit should be removed
+                if ((this->m_grid[4] & MASK_KING_CASTLE_QUEEN) != 0) {
+                    // Unflip
+                    this->m_grid[4] ^= MASK_KING_CASTLE_QUEEN;
+                }
+            }
+            // Remove kingside from castling rights
+            if ((this->m_grid[7] & MASK_TYPE) != PIECE_ROOK) {
+                // Check if bit should be removed
+                if ((this->m_grid[4] & MASK_KING_CASTLE_KING) != 0) {
+                    // Unflip
+                    this->m_grid[4] ^= MASK_KING_CASTLE_KING;
+                }
             }
         }
+    }
+    else {
+        // Default black king square
+        if ((this->m_grid[60] & MASK_TYPE) == PIECE_KING) {
+            // Remove queenside from castling rights
+            if ((this->m_grid[55] & MASK_TYPE) != PIECE_ROOK) {
+                // Check if bit should be removed
+                if ((this->m_grid[60] & MASK_KING_CASTLE_QUEEN) != 0) {
+                    // Unflip
+                    this->m_grid[60] ^= MASK_KING_CASTLE_QUEEN;
+                }
+            }
+            // Remove kingside from castling rights
+            if ((this->m_grid[63] & MASK_TYPE) != PIECE_ROOK) {
+                // Check if bit should be removed
+                if ((this->m_grid[60] & MASK_KING_CASTLE_KING) != 0) {
+                    // Unflip
+                    this->m_grid[60] ^= MASK_KING_CASTLE_KING;
+                }
+            }
+        }
+    }
+}
+
+void BoardManager::removeQueenFlags(int index) {
+
+}
+
+void BoardManager::removeKingFlags(int index) {
+    // Remove castling if moved
+    if ((this->m_grid[index] & MASK_KING_CASTLE_KING) != 0) {
+        // Unflip
+        this->m_grid[index] ^= MASK_KING_CASTLE_KING;
+    }
+    if ((this->m_grid[index] & MASK_KING_CASTLE_QUEEN) != 0) {
+        // Unflip
+        this->m_grid[index] ^= MASK_KING_CASTLE_QUEEN;
     }
 }
 

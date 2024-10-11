@@ -1,6 +1,7 @@
 #include "Library.h"
 
 #include "stb_image.h"
+#include "WindowManager.h"
 
 GLuint Library::texSlot = GL_TEXTURE0;
 
@@ -70,7 +71,7 @@ GLfloat Library::min(int x, int y) {
     return small;
 }
 
-GLfloat Library::min(POINT& pos) {
+GLfloat Library::min(POINT pos) {
     return Library::min(pos.x, pos.y);
 }
 
@@ -78,6 +79,29 @@ int Library::charToInt(char c) {
     return (tolower(c) - CHAR_TO_INT);
 
 }
+
+// Grid conversions
+
+POINT Library::physToGrid(POINT phys) {
+    // Determine in which square was clicked
+    POINT winSize = WindowManager::winSize();
+    GLfloat min = Library::min(winSize);
+    GLfloat scale = min / GRID_SIZE;
+
+    POINT gridPos = { (int)(phys.x / scale), (int)(GRID_SIZE - (phys.y / scale)) };
+    return gridPos;
+}
+
+int Library::gridToIndex(POINT grid) {
+    return (grid.y * GRID_SIZE + grid.x);
+}
+
+int Library::physToIndex(POINT phys) {
+    phys = Library::physToGrid(phys);
+    return Library::gridToIndex(phys);
+}
+
+
 
 GLfloat Library::map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax) {
     value -= currentMin;

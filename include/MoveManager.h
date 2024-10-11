@@ -8,9 +8,12 @@
 #define MOVE_CONTINUE   1
 #define MOVE_END        2
 
+#define MASK_LOCATION   0b000111111
+#define MASK_FLAGS      0b111000000
+
 class MoveManager {
 private:
-    POINT m_startPos;
+    int m_startIndex;
     std::vector<int> m_validMoves;
 
     int m_piece;
@@ -49,12 +52,13 @@ private:
 
 public:
     // ----- Creation -----
+
     MoveManager();
 
     // ----- Read -----
     
     // Calculates all valid moves for given piece
-    void calculateMoves(POINT startPos, int piece, const int* grid);
+    void calculateMoves(int startIndex, int piece, const int* grid);
 
     // Returns piece if a given move is in the valid moves
     int isValidMove(const POINT& testPos);
@@ -67,6 +71,7 @@ public:
     // ----- Update -----
 
     // ----- Destruction -----
+
     ~MoveManager();
 };
 

@@ -45,10 +45,10 @@ constexpr char startFEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 #define MASK_HELD               0b000100000
 #define MASK_MIN_FLAGS          (MASK_HELD | MASK_COLOUR | MASK_TYPE)
 #define MASK_PINNED             0b001000000
-#define MASK_LOCATION           0b000111111
 
 // Piece specific masks
 #define MASK_PAWN_FIRST_MOVE    0b010000000
+#define MASK_PAWN_EN_PASSENT    0b100000000
 #define MASK_KING_CASTLE_KING   0b010000000
 #define MASK_KING_CASTLE_QUEEN  0b100000000
 #define MASK_CASTLING           (MASK_KING_CASTLE_KING | MASK_KING_CASTLE_QUEEN)
@@ -64,8 +64,8 @@ private:
 
     // Store pieces and their information
     int m_grid[GRID_SIZE * GRID_SIZE];
-    int m_heldPiece, m_phantomLocation;
-    POINT m_heldPieceOriginPos;
+    int m_heldPiece, m_phantomLocation, m_phantomAttack;
+    int m_heldPieceOriginPos;
     std::vector<int> m_validMoves;
 
     // Castling data
@@ -77,10 +77,6 @@ private:
     // Stores colours for rendering values
     COLOUR m_dark, m_light;
 
-    // For board to know if it needs to check positioning
-    static POINT s_mouse;
-    static bool s_isClicked;
-
     // ----- Update -----
 
     // Sets metadata for board upon loading
@@ -90,13 +86,20 @@ private:
     void setMetadata();
 
     // Grabs a piece and holds it
-    void hold(POINT& gridPos);
+    bool hold(int index);
 
     // Releases the piece
-    void release(const POINT& gridPos, int piece, bool moved);
+    void release(int index, int piece, bool moved);
 
-    // Removes any flags from piece
+    // Calls flag removal function for different pieces
     void removeFlags(int index);
+
+    void removePawnFlags(int index);
+    void removeKnightFlags(int index);
+    void removeBishopFlags(int index);
+    void removeRookFlags(int index);
+    void removeQueenFlags(int index);
+    void removeKingFlags(int index);
 
 public:
     // ----- Creation -----
@@ -116,7 +119,7 @@ public:
     void showBoard();
 
     // Checks if there are any actions the board needs to take before rendering
-    void check();
+    void check(int index);
 
     // ----- Update -----
     
@@ -128,8 +131,6 @@ public:
 
     // Clears everything off of board
     void clearBoard();
-
-    static void clicked(const POINT& mousePos);
 
     // ----- Destruction -----
 
