@@ -3,7 +3,7 @@
 // ----- Library defines -----
 
 // Allows for bigger grids, performance costs will increase
-#define GRID_SIZE   8
+#define GRID_SIZE       8
 #define TOTAL_TEXTURES  12
 #define CHAR_TO_INT     97
 
@@ -67,7 +67,10 @@ typedef int INDEX;
 #define BOARD_CASTLING_WHITE_KING   0x2
 #define BOARD_CASTLING_WHITE_QUEEN  0x3
 
-constexpr char startFEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+constexpr char startFEN[]   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+constexpr char startFEN12[] = "rnbnbqkbnbnr/pppppppppppp/12/12/12/12/12/12/12/12/PPPPPPPPPPPP/RNBNBQKBNBNR w KQkq - 0 1";
+// Third row pawns CANNOT double move, knights blocked at start
+constexpr char startFEN16[] = "rnbrnbrqkrbnrbnr/pppppppppppppppp/p1pp1pp11pp1pp1p/16/16/16/16/16/16/16/16/16/16/P1PP1PP11PP1PP1P/PPPPPPPPPPPPPPPP/RNBRNBRQKRBNRBNR w KQkq - 0 1";
 
 
 
@@ -76,6 +79,5 @@ constexpr char startFEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 #define MOVE_CONTINUE   1
 #define MOVE_END        2
 
-#define MASK_LOCATION   0b000111111
 #define MASK_FLAGS      0b111000000
 

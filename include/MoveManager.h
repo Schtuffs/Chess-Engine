@@ -10,6 +10,7 @@ class MoveManager {
 private:
     int m_startIndex;
     std::vector<INDEX> m_validMoves;
+    std::vector<FLAG> m_moveFlags;
     std::vector<INDEX> m_defendingMoves;
 
     PIECE m_piece;
@@ -18,7 +19,7 @@ private:
     // ----- Read -----
 
     // Compares the values to determine if move should be added
-    int addMove(INDEX index);
+    int addMove(INDEX index, FLAG flag);
 
     // ----- Update -----
 
@@ -58,9 +59,6 @@ public:
     
     // Calculates all valid moves for given piece
     void calculateMoves(INDEX startIndex, PIECE piece, const PIECE* grid);
-
-    // Returns piece if a given move is in the valid moves
-    PIECE isValidMove(const POINT& testPos);
 
     // Returns piece if a given move is in the valid moves
     PIECE isValidMove(INDEX testPos);

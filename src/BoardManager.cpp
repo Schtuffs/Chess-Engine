@@ -6,12 +6,15 @@
 // ----- Creation -----
 
 BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
-    // Setup board with FEN string
-    this->setBoard(FEN);
+    // Setup FEN for setting board
+    this->resetFEN = FEN;
 
     // Selects board colouring
     this->setBoardColour(boardColourStyle);
-
+    
+    // Setup board with FEN string
+    this->resetBoard();
+    
     // Setting
     this->m_heldPiece = 0;
     this->m_heldPieceOriginPos = -1;
@@ -45,9 +48,7 @@ void BoardManager::show() {
 
 void BoardManager::showBoard() { 
     // Scales board based on smaller side so it stays square
-    POINT winSize = WindowManager::winSize();
-    GLfloat scale = Library::min(winSize);
-    scale /= GRID_SIZE;
+    GLfloat scale = Library::min(WindowManager::winSize()) / GRID_SIZE;
 
     // Loop through each grid index
     for (int y = 0; y < GRID_SIZE; y++) {
@@ -56,24 +57,24 @@ void BoardManager::showBoard() {
 
             // Render move squares with a slightly changed colour mask
             COLOUR mask = { 0.0f, 0.0f, 0.0f};
-            if (m_heldPiece) {
+            if (this->m_heldPiece) {
                 auto moves = this->m_moveManager.getMoves();
-                for (int move : moves) {
-                    move &= MASK_MIN_FLAGS;
+                for (INDEX move : moves) {
                     if (index == move) {
                         mask.r = 0.3f;
                         mask.g = -0.3f;
                         mask.b = -0.3f;
+                        break;
                     }
                 }
-            }
 
-            // Render piece square as gold
-            if (index == this->m_heldPieceOriginPos) {
-                mask.r = 0.5f;
-                mask.g = 0.5f;
-                mask.b = -0.5f;
-            }
+                // Render piece origin square as gold
+                if (index == this->m_heldPieceOriginPos) {
+                    mask.r = 0.5f;
+                    mask.g = 0.5f;
+                    mask.b = -0.5f;
+                }
+            }            
 
             // Render colour based on evenness
             if ((x + y) % 2 == 0) {
@@ -205,18 +206,18 @@ void BoardManager::clearBoard() {
     this->m_phantomLocation = -1;
 }
 
-void BoardManager::setBoard(const std::string& FEN) {
+void BoardManager::resetBoard() {
     this->clearBoard();
 
-    std::string pieceFEN = FEN.substr(0, FEN.find(' '));
-    std::string metadata = FEN.substr(FEN.find(' ') + 1);
+    std::string pieceFEN = this->resetFEN.substr(0, this->resetFEN.find(' '));
+    std::string metadata = this->resetFEN.substr(this->resetFEN.find(' ') + 1);
 
     // Load metadata
     this->getMetadata(metadata);
 
     // Loop through each index
     // Starts from top left, goes to bottom right
-    int x = 0, y = 7;
+    int x = 0, y = GRID_SIZE - 1;
     for (char c : pieceFEN) {
         if (c == ' ') {
             return;
@@ -363,7 +364,7 @@ void BoardManager::setMetadata() {
                 if (y == 1 && pieceColour == PIECE_WHITE) {
                     Piece::addFlag(&this->m_grid[i], MASK_PAWN_FIRST_MOVE);
                 }
-                else if (y == 6 && pieceColour == PIECE_BLACK) {
+                else if (y == (GRID_SIZE - 2) && pieceColour == PIECE_BLACK) {
                     Piece::addFlag(&this->m_grid[i], MASK_PAWN_FIRST_MOVE);
                 }
             }

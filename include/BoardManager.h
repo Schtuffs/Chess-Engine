@@ -16,6 +16,9 @@ private:
     // Calculates moves
     MoveManager m_moveManager;
 
+    // Reset FEN
+    std::string resetFEN;
+
     // Store pieces and their information
     PIECE m_grid[GRID_SIZE * GRID_SIZE];
     PIECE m_heldPiece;
@@ -75,7 +78,7 @@ public:
     void setBoardColour(GLuint boardColourStyle);
 
     // Sets board up with FEN string
-    void setBoard(const std::string& FEN);
+    void resetBoard();
 
     // Clears everything off of board
     void clearBoard();

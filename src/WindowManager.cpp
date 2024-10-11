@@ -102,7 +102,7 @@ namespace WindowManager {
     }
     
     void reset() {
-        s_board->setBoard(startFEN);
+        s_board->resetBoard();
     }
     
     // Destruction

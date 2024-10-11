@@ -31,8 +31,8 @@ public:
 
     // Grid conversions
     static POINT physToGrid(POINT phys);
-    static int gridToIndex(POINT grid);
-    static int physToIndex(POINT phys);
+    static INDEX gridToIndex(POINT grid);
+    static INDEX physToIndex(POINT phys);
     
     static GLfloat map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax);
 };

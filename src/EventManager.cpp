@@ -1,6 +1,7 @@
 #include "EventManager.h"
 
 #include "WindowManager.h"
+#include "Defines.h"
 
 // ----- Creation -----
 
@@ -36,7 +37,7 @@ void EventManager::manageEvents() {
 
 void EventManager::manageClickEvents() {
     // Figure out what to do about click
-    int index = Library::physToIndex(s_mousePos);
+    INDEX index = Library::physToIndex(s_mousePos);
     int min = Library::min(WindowManager::winSize());
     
     // Only check if the mouse position is within bounds

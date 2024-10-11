@@ -92,11 +92,11 @@ POINT Library::physToGrid(POINT phys) {
     return gridPos;
 }
 
-int Library::gridToIndex(POINT grid) {
+INDEX Library::gridToIndex(POINT grid) {
     return (grid.y * GRID_SIZE + grid.x);
 }
 
-int Library::physToIndex(POINT phys) {
+INDEX Library::physToIndex(POINT phys) {
     phys = Library::physToGrid(phys);
     return Library::gridToIndex(phys);
 }
