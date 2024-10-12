@@ -6,6 +6,7 @@
 #define GRID_SIZE       8
 #define TOTAL_TEXTURES  12
 #define CHAR_TO_INT     97
+#define CODE_INVALID    -1
 
 // ----- Piece defines -----
 
@@ -26,25 +27,25 @@ typedef PIECE FLAG;
 #define PIECE_WHITE     0x08
 #define PIECE_BLACK     0x10
 
-#define MASK_BLACK              0b000010000
-#define MASK_WHITE              0b000001000
-#define MASK_TYPE               0b000000111
+#define MASK_BLACK              0b0000010000
+#define MASK_WHITE              0b0000001000
+#define MASK_TYPE               0b0000000111
 #define MASK_COLOUR             (MASK_BLACK | MASK_WHITE)
-#define MASK_HELD               0b000100000
+#define MASK_HELD               0b0000100000
 #define MASK_MIN_FLAGS          (MASK_HELD | MASK_COLOUR | MASK_TYPE)
-#define MASK_PINNED             0b001000000
+#define MASK_PINNED             0b0001000000
 
-#define MASK_FLAG_1             0b010000000
-#define MASK_FLAG_2             0b100000000
+#define MASK_FLAG_1             0b0010000000
+#define MASK_FLAG_2             0b0100000000
 
 // Piece specific masks
 
-#define MASK_PAWN_FIRST_MOVE    0b010000000
-#define MASK_PAWN_EN_PASSENT    0b100000000
-#define MASK_KING_CASTLE_KING   0b010000000
-#define MASK_KING_CASTLE_QUEEN  0b100000000
+#define MASK_PAWN_FIRST_MOVE    0b0010000000
+#define MASK_PAWN_EN_PASSENT    0b0100000000
+#define MASK_KING_CASTLE_KING   0b0010000000
+#define MASK_KING_CASTLE_QUEEN  0b0100000000
 #define MASK_KING_CASTLING      (MASK_KING_CASTLE_KING | MASK_KING_CASTLE_QUEEN)
-#define MASK_ROOK_CAN_CASTLE    0b010000000
+#define MASK_ROOK_CAN_CASTLE    0b0010000000
 
 
 
@@ -66,6 +67,9 @@ typedef int INDEX;
 #define BOARD_CASTLING_BLACK_QUEEN  0x1
 #define BOARD_CASTLING_WHITE_KING   0x2
 #define BOARD_CASTLING_WHITE_QUEEN  0x3
+
+constexpr char testFEN1[]    = "r2qk2r/Ppp2ppP/8/8/8/8/pPP2PPp/R2QK2R w KQkq - 0 1";
+constexpr char testFEN2[]    = "8/PPPPPPPP/pppppppp/8/8/PPPPPPPP/pppppppp/8 w - - 0 1";
 
 constexpr char startFEN[]   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 constexpr char startFEN12[] = "rnbnbqkbnbnr/pppppppppppp/12/12/12/12/12/12/12/12/PPPPPPPPPPPP/RNBNBQKBNBNR w KQkq - 0 1";

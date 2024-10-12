@@ -6,7 +6,10 @@
 // ----- Creation -----
 
 bool EventManager::s_eventClick = false;
+bool EventManager::s_eventPromotion = false;
 POINT EventManager::s_mousePos = { 0, 0 };
+INDEX EventManager::s_indexPromotion = CODE_INVALID;
+
 
 EventManager::EventManager() {
     // Nothing todo
@@ -14,22 +17,16 @@ EventManager::EventManager() {
 
 // ----- Read -----
 
-void EventManager::eventClick(POINT mousePos) {
-    s_eventClick = true;
-    s_mousePos = mousePos;
-
-    // Determines if height of click must be adjusted
-    POINT winSize = WindowManager::winSize();
-    if (winSize.y > winSize.x) {
-        s_mousePos.y -= (winSize.y - winSize.x);
-    }
-}
-
 void EventManager::manageEvents() {
     // Deals with click events
     if (s_eventClick) {
         s_eventClick = false;
         this->manageClickEvents();
+    }
+    // Deals with pawn promotions
+    if (s_eventPromotion) {
+        this->s_eventPromotion = false;
+        this->managePromotionEvents();
     }
 }
 
@@ -46,10 +43,31 @@ void EventManager::manageClickEvents() {
     }
 }
 
+void EventManager::managePromotionEvents() {
+    this->m_board->setPromotion(s_indexPromotion);
+    this->s_indexPromotion = CODE_INVALID;
+}
+
 // ----- Update -----
 
 void EventManager::setBoard(BoardManager* board) {
     this->m_board = board;
+}
+
+void EventManager::eventClick(POINT mousePos) {
+    s_eventClick = true;
+    s_mousePos = mousePos;
+
+    // Determines if height of click must be adjusted
+    POINT winSize = WindowManager::winSize();
+    if (winSize.y > winSize.x) {
+        s_mousePos.y -= (winSize.y - winSize.x);
+    }
+}
+
+void EventManager::eventPromotion(INDEX index) {
+    s_indexPromotion = index;
+    s_eventPromotion = true;
 }
 
 // ----- Destruction -----

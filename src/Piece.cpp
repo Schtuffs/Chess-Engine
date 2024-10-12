@@ -1,6 +1,7 @@
 #include "Piece.h"
 
 #include "BoardManager.h"
+#include "EventManager.h"
     
 namespace {
 
@@ -9,6 +10,13 @@ namespace {
         Piece::removeFlag(&grid[index], MASK_PAWN_FIRST_MOVE);
         // Remove en passent
         Piece::removeFlag(&grid[index], MASK_PAWN_EN_PASSENT);
+
+        // Check if pawn has reached the edge of the board
+            // White Pawn                             // Black Pawn
+        if (((index / GRID_SIZE) == GRID_SIZE - 1) || ((index / GRID_SIZE) == 0)) {
+            // Adds promotion event
+            EventManager::eventPromotion(index);
+        }
     }
 
     void removeKnightFlags(INDEX index, PIECE* grid){ 
@@ -81,11 +89,6 @@ FLAG Piece::getFlag(PIECE piece, FLAG flag) {
 }
 
 void Piece::removeFlags(INDEX index, PIECE* grid) {
-    // Return if no flags
-    if (!Piece::getFlag(grid[index], MASK_FLAGS)) {
-        return;
-    }
-
     // Piece information
     FLAG type = Piece::getFlag(grid[index], MASK_TYPE);
     switch (type) {

@@ -7,7 +7,7 @@
 
 BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
     // Setup FEN for setting board
-    this->resetFEN = FEN;
+    this->m_resetFEN = FEN;
 
     // Selects board colouring
     this->setBoardColour(boardColourStyle);
@@ -17,7 +17,8 @@ BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
     
     // Setting
     this->m_heldPiece = 0;
-    this->m_heldPieceOriginPos = -1;
+    this->m_heldPieceOriginPos = CODE_INVALID;
+    this->m_promotionIndex = CODE_INVALID;
 }
 
 // ----- Read -----
@@ -44,6 +45,11 @@ void BoardManager::show() {
         POINT mousePos = WindowManager::cursorPos();
         this->m_renderer.render(this->m_heldPiece, mousePos.x, mousePos.y);
     }
+
+    // Render promotion screen if promotion is valid
+    if (this->m_promotionIndex != CODE_INVALID) {
+        this->showPromotionOptions();
+    }
 }
 
 void BoardManager::showBoard() { 
@@ -58,6 +64,14 @@ void BoardManager::showBoard() {
             // Render move squares with a slightly changed colour mask
             COLOUR mask = { 0.0f, 0.0f, 0.0f};
             if (this->m_heldPiece) {
+                // Render piece origin square as gold
+                if (index == this->m_heldPieceOriginPos) {
+                    COLOUR gold = { 0.85f, 0.75f, 0.4f };
+                    this->m_renderer.rect(gold, x * scale, y * scale, scale, scale);
+                    continue;
+                }
+
+                // Check for moves and render as red
                 auto moves = this->m_moveManager.getMoves();
                 for (INDEX move : moves) {
                     if (index == move) {
@@ -66,13 +80,6 @@ void BoardManager::showBoard() {
                         mask.b = -0.3f;
                         break;
                     }
-                }
-
-                // Render piece origin square as gold
-                if (index == this->m_heldPieceOriginPos) {
-                    mask.r = 0.5f;
-                    mask.g = 0.5f;
-                    mask.b = -0.5f;
                 }
             }            
 
@@ -90,6 +97,15 @@ void BoardManager::showBoard() {
 }
 
 void BoardManager::check(INDEX index) {
+    // First, check if promotion is happening
+    if (this->m_promotionIndex != CODE_INVALID) {
+        // Determine which option was hit
+        this->promotionSelection(index);
+
+        // When promoting, don't allow other functions to happen
+        return;
+    }
+    
     // If a piece is held, try to release it
     if (this->m_heldPiece) {
         // Store piece incase of valid
@@ -116,6 +132,36 @@ void BoardManager::check(INDEX index) {
             }
         }
     }
+}
+
+// ----- Read ----- Hidden -----
+
+void BoardManager::showPromotionOptions() {
+    // Holds value for showing next index
+    int nextPiece = ((this->m_promotionIndex / GRID_SIZE) == 0 ? GRID_SIZE : (-GRID_SIZE));
+
+    // Render over other squares
+    GLfloat scale = Library::min(WindowManager::winSize()) / GRID_SIZE;
+    FLAG colour = Piece::getFlag(this->m_grid[this->m_promotionIndex], MASK_COLOUR);
+
+    // Holds pieces
+    PIECE pieces[] = { PIECE_QUEEN, PIECE_ROOK, PIECE_BISHOP, PIECE_KNIGHT };
+    
+    for (int i = 0; i < 4; i++) {
+        // Render square
+
+        // Variable setup for rendering
+        int x = (this->m_promotionIndex % GRID_SIZE);
+        int y = (this->m_promotionIndex / GRID_SIZE) + (i * nextPiece / GRID_SIZE);
+
+        // Render a golden square under promotion options
+        COLOUR gold = { 0.85f, 0.75f, 0.4f };
+        this->m_renderer.rect(gold, x * scale, y * scale, scale, scale);
+
+        PIECE piece = pieces[i] | colour;
+        this->m_renderer.render(piece, x, y);
+    }
+    
 }
 
 // ----- Update -----
@@ -209,8 +255,8 @@ void BoardManager::clearBoard() {
 void BoardManager::resetBoard() {
     this->clearBoard();
 
-    std::string pieceFEN = this->resetFEN.substr(0, this->resetFEN.find(' '));
-    std::string metadata = this->resetFEN.substr(this->resetFEN.find(' ') + 1);
+    std::string pieceFEN = this->m_resetFEN.substr(0, this->m_resetFEN.find(' '));
+    std::string metadata = this->m_resetFEN.substr(this->m_resetFEN.find(' ') + 1);
 
     // Load metadata
     this->getMetadata(metadata);
@@ -273,6 +319,13 @@ void BoardManager::resetBoard() {
         }
     }
     this->setMetadata();
+}
+
+void BoardManager::setPromotion(INDEX index) {
+    if (0 <= index && index < GRID_SIZE * GRID_SIZE)
+        this->m_promotionIndex = index;
+    else
+        this->m_promotionIndex = -1;
 }
 
 // ----- Update ----- Hidden -----
@@ -412,6 +465,34 @@ void BoardManager::setMetadata() {
     }
 }
 
+void BoardManager::promotionSelection(INDEX index) {
+    // Holds value for checking next index
+    int checkValue = ((this->m_promotionIndex / GRID_SIZE) == 0 ? GRID_SIZE : (-GRID_SIZE));
+
+    // Determine if valid option was clicked
+    FLAG colour = Piece::getFlag(this->m_grid[this->m_promotionIndex], MASK_COLOUR);
+    // Top/Bottom - Queen
+    if (index == this->m_promotionIndex) {
+        this->m_grid[this->m_promotionIndex] = PIECE_QUEEN | colour;
+        this->m_promotionIndex = CODE_INVALID;
+    }
+    // Second - Rook
+    else if (index == this->m_promotionIndex + checkValue) {
+        this->m_grid[this->m_promotionIndex] = PIECE_ROOK | colour;
+        this->m_promotionIndex = CODE_INVALID;
+    }
+    // Third - Bishop
+    else if (index == this->m_promotionIndex + (2 * checkValue)) {
+        this->m_grid[this->m_promotionIndex] = PIECE_BISHOP | colour;
+        this->m_promotionIndex = CODE_INVALID;
+    }
+    // Bottom/Top - Knight
+    else if (index == this->m_promotionIndex + (3 * checkValue)) {
+        this->m_grid[this->m_promotionIndex] = PIECE_KNIGHT | colour;
+        this->m_promotionIndex = CODE_INVALID;
+    }
+}
+
 bool BoardManager::hold(INDEX index) {
     // Checks piece colour
     PIECE piece = this->m_grid[index];
@@ -433,9 +514,8 @@ void BoardManager::release(INDEX index, PIECE piece, bool moved) {
     Piece::removeFlag(&piece, MASK_HELD);
     this->m_grid[index] = piece;
     
-
     this->m_heldPiece = 0;
-    this->m_heldPieceOriginPos = -1;
+    this->m_heldPieceOriginPos = CODE_INVALID;
 
     // Deal with phantom
     this->managePhantom(index, piece);
@@ -456,8 +536,8 @@ void BoardManager::managePhantom(INDEX index, PIECE piece) {
     if (0 <= this->m_phantomLocation && this->m_phantomLocation < GRID_SIZE * GRID_SIZE) {
         if (this->m_grid[this->m_phantomLocation] == PIECE_PHANTOM){
             this->m_grid[m_phantomLocation] = 0;
-            this->m_phantomLocation = -1;
-            this->m_phantomAttack = -1;
+            this->m_phantomLocation = CODE_INVALID;
+            this->m_phantomAttack = CODE_INVALID;
         }
     }
 

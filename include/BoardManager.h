@@ -17,7 +17,7 @@ private:
     MoveManager m_moveManager;
 
     // Reset FEN
-    std::string resetFEN;
+    std::string m_resetFEN;
 
     // Store pieces and their information
     PIECE m_grid[GRID_SIZE * GRID_SIZE];
@@ -25,6 +25,9 @@ private:
     INDEX m_phantomLocation, m_phantomAttack;
     INDEX m_heldPieceOriginPos;
     std::vector<INDEX> m_validMoves;
+
+    // Pawn promotion data
+    INDEX m_promotionIndex;
 
     // Castling data
     bool m_castling[4];
@@ -35,6 +38,11 @@ private:
     // Stores colours for rendering values
     COLOUR m_dark, m_light;
 
+    // ----- Read -----
+
+    // Renders promotion items to the screen
+    void showPromotionOptions();
+
     // ----- Update -----
 
     // Sets metadata for board upon loading
@@ -42,6 +50,9 @@ private:
 
     // Adds the metadata from FEN string to board
     void setMetadata();
+
+    // Determines which option was selected from the promotion screen
+    void promotionSelection(INDEX index);
 
     // Grabs a piece and holds it
     bool hold(INDEX index);
@@ -82,6 +93,9 @@ public:
 
     // Clears everything off of board
     void clearBoard();
+
+    // Sets an index where pawn promoted
+    void setPromotion(INDEX index);
 
     // ----- Destruction -----
 
