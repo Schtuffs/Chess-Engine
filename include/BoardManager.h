@@ -21,9 +21,8 @@ private:
 
     // Store pieces and their information
     PIECE m_grid[GRID_SIZE * GRID_SIZE];
-    PIECE m_heldPiece;
+    INDEX m_heldPieceIndex;
     INDEX m_phantomLocation, m_phantomAttack;
-    INDEX m_heldPieceOriginPos;
     std::vector<INDEX> m_validMoves;
 
     // Pawn promotion data
@@ -58,7 +57,7 @@ private:
     bool hold(INDEX index);
 
     // Releases the piece
-    void release(INDEX index, PIECE piece, bool moved);
+    void release(MOVE move, bool moved);
 
     // Deals with phantom piece
     void managePhantom(INDEX index, PIECE piece);

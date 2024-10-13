@@ -2,6 +2,7 @@
 
 #include "WindowManager.h"
 #include "Piece.h"
+#include "Move.h"
 
 // ----- Creation -----
 
@@ -16,8 +17,7 @@ BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
     this->resetBoard();
     
     // Setting
-    this->m_heldPiece = 0;
-    this->m_heldPieceOriginPos = CODE_INVALID;
+    this->m_heldPieceIndex = CODE_INVALID;
     this->m_promotionIndex = CODE_INVALID;
 }
 
@@ -35,15 +35,17 @@ void BoardManager::show() {
     //Render board
     for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
         // If there is a piece on the grid square
-        if (this->m_grid[i]) {
+        if (this->m_grid[i] && !Piece::getFlag(this->m_grid[i], MASK_HELD)) {
             this->m_renderer.render(this->m_grid[i], i % GRID_SIZE, i / GRID_SIZE);
         }
     }
 
     // Renders held piece so its on top
-    if (this->m_heldPiece) {
+    if (this->m_heldPieceIndex != CODE_INVALID) {
         POINT mousePos = WindowManager::cursorPos();
-        this->m_renderer.render(this->m_heldPiece, mousePos.x, mousePos.y);
+        PIECE held = this->m_grid[m_heldPieceIndex];
+        // Piece::removeFlag(&held, MASK_HELD);
+        this->m_renderer.render(held, mousePos.x, mousePos.y);
     }
 
     // Render promotion screen if promotion is valid
@@ -63,9 +65,9 @@ void BoardManager::showBoard() {
 
             // Render move squares with a slightly changed colour mask
             COLOUR mask = { 0.0f, 0.0f, 0.0f};
-            if (this->m_heldPiece) {
+            if (this->m_heldPieceIndex != CODE_INVALID) {
                 // Render piece origin square as gold
-                if (index == this->m_heldPieceOriginPos) {
+                if (index == this->m_heldPieceIndex) {
                     COLOUR gold = { 0.85f, 0.75f, 0.4f };
                     this->m_renderer.rect(gold, x * scale, y * scale, scale, scale);
                     continue;
@@ -73,8 +75,8 @@ void BoardManager::showBoard() {
 
                 // Check for moves and render as red
                 auto moves = this->m_moveManager.getMoves();
-                for (INDEX move : moves) {
-                    if (index == move) {
+                for (MOVE move : moves) {
+                    if (index == Move::getTarget(move)) {
                         mask.r = 0.3f;
                         mask.g = -0.3f;
                         mask.b = -0.3f;
@@ -107,18 +109,16 @@ void BoardManager::check(INDEX index) {
     }
     
     // If a piece is held, try to release it
-    if (this->m_heldPiece) {
+    if (this->m_heldPieceIndex != CODE_INVALID) {
         // Store piece incase of valid
-        PIECE piece = this->m_moveManager.isValidMove(index);
-        if (piece) {
-            // Only switch turn if piece was placed elsewhere
-            if (this->m_heldPieceOriginPos != index) {
-                this->m_currentTurn = (this->m_currentTurn == PIECE_WHITE ? PIECE_BLACK : PIECE_WHITE);
-                this->release(index, piece, true);
-            }
-            else {
-                this->release(index, piece, false);
-            }
+        MOVE move = this->m_moveManager.isLegal(index);
+        // Only switch turn if piece was placed elsewhere
+        if (index != this->m_heldPieceIndex) {
+            this->m_currentTurn = (this->m_currentTurn == PIECE_WHITE ? PIECE_BLACK : PIECE_WHITE);
+            this->release(move, true);
+        }
+        else {
+            this->release(move, false);
         }
         return;
     }
@@ -128,7 +128,7 @@ void BoardManager::check(INDEX index) {
         if (this->m_grid[index]) {
             // Stores held piece
             if (this->hold(index)) {
-                this->m_moveManager.calculateMoves(index, this->m_heldPiece, this->m_grid);
+                this->m_moveManager.calculateMoves(index, this->m_grid, true);
             }
         }
     }
@@ -244,12 +244,11 @@ void BoardManager::clearBoard() {
     this->m_currentTurn = TURN_WHITE;
 
     // Unholds piece
-    this->m_heldPiece = 0;
-    this->m_heldPieceOriginPos = -1;
+    this->m_heldPieceIndex = CODE_INVALID;
 
     // Phantom
-    this->m_phantomAttack = -1;
-    this->m_phantomLocation = -1;
+    this->m_phantomAttack = CODE_INVALID;
+    this->m_phantomLocation = CODE_INVALID;
 }
 
 void BoardManager::resetBoard() {
@@ -500,28 +499,32 @@ bool BoardManager::hold(INDEX index) {
         return false;
     }
 
-    this->m_heldPiece = piece;
-    Piece::addFlag(&this->m_heldPiece, MASK_HELD);
-    
-    this->m_heldPieceOriginPos = index;
-    this->m_grid[index] = 0;
+    this->m_heldPieceIndex = index;
+    Piece::addFlag(&this->m_grid[m_heldPieceIndex], MASK_HELD);
 
     return true;
 }
 
-void BoardManager::release(INDEX index, PIECE piece, bool moved) {
+void BoardManager::release(MOVE move, bool moved) {
     // Put held piece down on specified square
+    PIECE piece = this->m_grid[this->m_heldPieceIndex];
     Piece::removeFlag(&piece, MASK_HELD);
-    this->m_grid[index] = piece;
+    this->m_grid[Move::getTarget(move)] = piece;
     
-    this->m_heldPiece = 0;
-    this->m_heldPieceOriginPos = CODE_INVALID;
+    // Make sure not to delete piece if it was not moved
+    if (Move::getStart(move) != Move::getTarget(move)) {
+        this->m_grid[Move::getStart(move)] = 0;
+    }
+    
+    // Clear old data
+    this->m_heldPieceIndex = CODE_INVALID;
+    this->m_moveManager.clear();
 
     // Deal with phantom
-    this->managePhantom(index, piece);
+    this->managePhantom(Move::getTarget(move), piece);
 
     if (moved) {
-        Piece::removeFlags(index, this->m_grid);
+        Piece::removeFlags(Move::getTarget(move), this->m_grid);
     }
 }
 

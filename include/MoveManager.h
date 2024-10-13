@@ -5,50 +5,42 @@
 
 #include "Library.h"
 #include "Defines.h"
+#include "Move.h"
 
 class MoveManager {
 private:
-    int m_startIndex;
-    std::vector<INDEX> m_validMoves;
-    std::vector<FLAG> m_moveFlags;
-    std::vector<INDEX> m_defendingMoves;
-
-    PIECE m_piece;
-    const PIECE *m_grid;
-
-    // ----- Read -----
-
-    // Compares the values to determine if move should be added
-    int addMove(INDEX index, FLAG flag);
-
+    Move m_move;
+    
     // ----- Update -----
 
+    // Calculates and determines if enemy captured king
+    void calculateLegalMoves(INDEX colour, const PIECE* grid);
+    
     // Calculates moves for king
-    void calculateKingMoves(std::vector<INDEX>& enemyMoves);
+    bool calculateKingMoves(INDEX startIndex, const PIECE* grid);
 
     // Calculates the potential castling moves for the king
-    void calculateKingCastling();
-
-    // Calculates enemy moves so king can't move into their squares
-    std::vector<INDEX> calculateEnemyMoves(FLAG colour);
+    void calculateKingCastling(INDEX startIndex, const PIECE* grid);
 
     // Cardinal movement generation
-    void calculateCardinalMoves();
+    // Returns true if no moves capture a king
+    // Returns false immediately upon king capture, should not happen and must be dealt with
+    bool calculateCardinalMoves(INDEX startIndex, const PIECE* grid);
 
     // Diagonal movement generation
-    void calculateDiagonalMoves();
+    // Returns true if no moves capture a king
+    // Returns false immediately upon king capture, should not happen and must be dealt with
+    bool calculateDiagonalMoves(INDEX startIndex, const PIECE* grid);
 
     // Calculates moves for knight hops
-    void calculateKnightMoves();
+    // Returns true if no moves capture a king
+    // Returns false immediately upon king capture, should not happen and must be dealt with
+    bool calculateKnightMoves(INDEX startIndex, const PIECE* grid);
 
     // Calculates moves for pawns
-    void calculatePawnMoves();
-
-    // Used for calculating invalid king moves
-    void calculatePawnAttackingMoves(PIECE piece, INDEX index);
-
-    // Calculates all attacking moves for king
-    void calculateKingAttackingMoves(PIECE piece, INDEX index);
+    // Returns true if no moves capture a king
+    // Returns false immediately upon king capture, should not happen and must be dealt with
+    bool calculatePawnMoves(INDEX startIndex, const PIECE* grid);
 
 public:
     // ----- Creation -----
@@ -56,17 +48,20 @@ public:
     MoveManager();
 
     // ----- Read -----
-    
-    // Calculates all valid moves for given piece
-    void calculateMoves(INDEX startIndex, PIECE piece, const PIECE* grid);
 
-    // Returns piece if a given move is in the valid moves
-    PIECE isValidMove(INDEX testPos);
+    // Returns a move if the move is legal
+    MOVE isLegal(INDEX index);
 
-    std::vector<INDEX> getMoves();
-    std::vector<INDEX> getDefendingMoves();
+    // Gets calculated legal moves
+    std::vector<MOVE> getMoves();
 
     // ----- Update -----
+    
+    // Calculates all valid moves for given piece
+    bool calculateMoves(INDEX startIndex, const PIECE* grid, bool calculateEnemyMoves = false);
+
+    // Clears moves after piece is moved
+    void clear();
 
     // ----- Destruction -----
 
