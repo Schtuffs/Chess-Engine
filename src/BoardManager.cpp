@@ -243,8 +243,9 @@ void BoardManager::clearBoard() {
     this->m_50moveRule = 0;
     this->m_currentTurn = PIECE_WHITE;
 
-    // Unholds piece
+    // Unholds piece and clears moves
     this->m_heldPieceIndex = CODE_INVALID;
+    this->m_moveManager.clear();
 
     // Phantom
     this->m_phantomAttack = CODE_INVALID;

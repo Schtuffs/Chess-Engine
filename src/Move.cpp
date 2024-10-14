@@ -14,7 +14,7 @@ Move::~Move() {
 
 void Move::p_addValid(INDEX startIndex, INDEX targetIndex, FLAG flags) {
     bool firstInstance = true;
-    MOVE adding = {startIndex | (targetIndex << 6) | (flags << 12)};
+    MOVE adding = {startIndex | (targetIndex << 6) | flags};
     for (MOVE move : m_validMoves) {
         if (move.moveInfo == adding.moveInfo) {
             firstInstance = false;
@@ -137,7 +137,7 @@ INDEX Move::getTarget(MOVE move) {
 }
 
 FLAG Move::getFlags(MOVE move) {
-    return ((move.moveInfo & MASK_MOVE_FLAGS) >> 12);
+    return ((move.moveInfo & MASK_MOVE_FLAGS));
 }
 
 FLAG Move::getFlag(MOVE move, FLAG flag) {

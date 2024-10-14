@@ -12,7 +12,7 @@
 // ----- Piece defines -----
 
 // Stores piece information and flags
-typedef int PIECE;
+typedef unsigned short PIECE;
 // Same type as piece, but used differently
 typedef PIECE FLAG;
 
