@@ -156,5 +156,13 @@ void Piece::Debug(PIECE piece) {
     // If piece has second flag
     FLAG flag2 = Piece::getFlag(piece, MASK_FLAG_2);
     std::cout << "Flag2: " << (flag2 ? "True" : "False") << std::endl;
+
+    // If piece has third flag
+    FLAG flag3 = Piece::getFlag(piece, MASK_FLAG_3);
+    std::cout << "Flag3: " << (flag3 ? "True" : "False") << std::endl;
+
+    // If piece is checking enemy king
+    FLAG flag4 = Piece::getFlag(piece, MASK_FLAG_4);
+    std::cout << "Checking King: " << (flag4 ? "True" : "False") << std::endl;
 }
 

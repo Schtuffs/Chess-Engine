@@ -35,10 +35,12 @@ typedef PIECE FLAG;
 #define MASK_COLOUR             (MASK_BLACK | MASK_WHITE)
 #define MASK_HELD               0b0000000000100000
 #define MASK_MIN_FLAGS          (MASK_HELD | MASK_COLOUR | MASK_TYPE)
-#define MASK_PINNED             0b0000000001000000
+#define MASK_KING_IN_CHECK      0b1000000000000000
 
 #define MASK_FLAG_1             0b0001000000000000
 #define MASK_FLAG_2             0b0010000000000000
+#define MASK_FLAG_3             0b0100000000000000
+#define MASK_FLAG_4             0b1000000000000000
 
 // Piece specific masks
 
@@ -61,9 +63,6 @@ typedef int INDEX;
 #define BOARD_GREEN_CREAM           0x32
 #define BOARD_DBLUE_LBLUE           0x33
 #define BOARD_RED_GOLD              0x34
-
-#define TURN_WHITE                  0x101
-#define TURN_BLACK                  0x102
 
 #define BOARD_CASTLING_BLACK_KING   0x0
 #define BOARD_CASTLING_BLACK_QUEEN  0x1

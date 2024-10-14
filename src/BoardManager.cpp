@@ -113,11 +113,11 @@ void BoardManager::check(INDEX index) {
         // Store piece incase of valid
         MOVE move = this->m_moveManager.isLegal(index);
         // Only switch turn if piece was placed elsewhere
-        if (index != this->m_heldPieceIndex) {
+        if (index != this->m_heldPieceIndex && Move::getStart(move)) {
             this->m_currentTurn = (this->m_currentTurn == PIECE_WHITE ? PIECE_BLACK : PIECE_WHITE);
             this->release(move, true);
         }
-        else {
+        else if (Move::getStart(move)) {
             this->release(move, false);
         }
         return;
@@ -241,7 +241,7 @@ void BoardManager::clearBoard() {
     // Reset move counts
     this->m_totalTurns = 0;
     this->m_50moveRule = 0;
-    this->m_currentTurn = TURN_WHITE;
+    this->m_currentTurn = PIECE_WHITE;
 
     // Unholds piece
     this->m_heldPieceIndex = CODE_INVALID;
@@ -506,6 +506,12 @@ bool BoardManager::hold(INDEX index) {
 }
 
 void BoardManager::release(MOVE move, bool moved) {
+    // Check if move put king into check
+    FLAG kingChecked = Move::getFlag(move, MASK_KING_IN_CHECK);
+    if (kingChecked) {
+        // this->m_moveManager.calculateMoves()
+    }
+    
     // Put held piece down on specified square
     PIECE piece = this->m_grid[this->m_heldPieceIndex];
     Piece::removeFlag(&piece, MASK_HELD);

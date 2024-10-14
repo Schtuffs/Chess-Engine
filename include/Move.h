@@ -24,7 +24,8 @@ public:
 
     static INDEX getStart(MOVE move);
     static INDEX getTarget(MOVE move);
-    static INDEX getFlags(MOVE move);
+    static FLAG getFlags(MOVE move);
+    static FLAG getFlag(MOVE move, FLAG flag);
 
     void clearValid();
     void clearLegal();

@@ -94,13 +94,14 @@ int Move::addValid(INDEX startIndex, INDEX targetIndex, FLAG flags, const PIECE*
     // Determine if different colour colour
 
     if (thisColour != targetColour) {
-        // Pieces are not the same colour, add move
-        p_addValid(startIndex, targetIndex, flags);
-
         // Check if move is attacking a king
         if (targetType == PIECE_KING) {
+            // Attacking king, add flag
+            p_addValid(startIndex, targetIndex, flags | MASK_KING_IN_CHECK);
             return MOVE_CAPTURE_KING;
         }
+        // Pieces are not the same colour, add move
+        p_addValid(startIndex, targetIndex, flags);
     }
     return MOVE_END;
 }
@@ -135,8 +136,12 @@ INDEX Move::getTarget(MOVE move) {
     return ((move.moveInfo & MASK_MOVE_TARGET) >> 6);
 }
 
-INDEX Move::getFlags(MOVE move) {
+FLAG Move::getFlags(MOVE move) {
     return ((move.moveInfo & MASK_MOVE_FLAGS) >> 12);
+}
+
+FLAG Move::getFlag(MOVE move, FLAG flag) {
+    return (move.moveInfo & flag);
 }
 
 void Move::clearValid() {
