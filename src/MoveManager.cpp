@@ -23,6 +23,22 @@ Move MoveManager::isLegal(INDEX index) {
     return Move();
 }
 
+bool MoveManager::isLegal(Move& move) {
+    for(Move& legal : this->m_legalMoves) {
+        // Checks positions are the same
+        if(move.getStart() != legal.getStart()) {
+            continue;
+        }
+        if (move.getTarget() != legal.getTarget()) {
+            continue;
+        }
+        // Adds flags from other moves
+        move.addFlags(legal.getFlags());
+        return true;
+    }
+    return false;
+}
+
 std::vector<Move> MoveManager::getValidMoves() {
     return this->m_validMoves;
 }

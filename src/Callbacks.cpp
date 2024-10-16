@@ -11,13 +11,18 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
     // Display FPS on backtick
-    if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS) {
+    else if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS) {
         FpsTracker::showFPS();
     }
 
     // Reset on r
-    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+    else if (key == GLFW_KEY_R && action == GLFW_PRESS) {
         WindowManager::reset();
+    }
+
+    // Change board flipping status on f
+    else if (action == GLFW_PRESS) {
+        EventManager::eventKey(key);
     }
 }
 

@@ -6,10 +6,11 @@
 #include "RenderManager.h"
 #include "MoveManager.h"
 #include "Defines.h"
+#include "Player.h"
 
 // Manages pieces on the board and controlling some of its rendering
 class BoardManager {
-private:
+private:    
     // To deal with all rendering functions
     RenderManager m_renderer;
 
@@ -32,8 +33,8 @@ private:
     // Castling data
     bool m_castling[4];
     
-    // Stores whos turn it is to move
-    int m_currentTurn, m_totalTurns, m_50moveRule;
+    // Stores move data
+    int m_totalTurns, m_50moveRule;
     // Stores if game is checkmate
     bool m_checkmate;
     // Stores if game is in stalemate
@@ -41,6 +42,11 @@ private:
 
     // Stores colours for rendering values
     COLOUR m_dark, m_light;
+
+    // Stores players
+    bool m_flipBoard;
+    Player m_whitePlayer, m_blackPlayer;
+    Player* m_currentPlayer;
 
     // ----- Read -----
 
@@ -53,7 +59,7 @@ private:
     // ----- Update -----
 
     // Sets metadata for board upon loading
-    void getMetadata(std::string& metadata);
+    void readMetadata(std::string& metadata);
 
     // Adds the metadata from FEN string to board
     void setMetadata();
@@ -65,7 +71,7 @@ private:
     void hold(INDEX index);
 
     // Releases the piece
-    void release(Move move);
+    void release(Move& move);
 
     // Deals with phantom piece
     void managePhantom(Move move);
@@ -76,7 +82,7 @@ public:
     // Setup board
     // fillStyle - BOARD_FILL_MANUAL or BOARD_FILL_AUTOMATIC
     // boardColourStyle - select colours to render board with
-    BoardManager(GLenum boardColourStyle, const std::string& FEN = startFEN);
+    BoardManager(Player& white, Player& black, GLenum boardColourStyle, bool flipBoard = true, const std::string& FEN = startFEN);
 
     // ----- Read -----
 
@@ -88,9 +94,12 @@ public:
     void showBoard();
 
     // Checks if there are any actions the board needs to take before rendering
-    void check(INDEX index);
+    void ManageInput(INDEX index);
 
     // ----- Update -----
+
+    // Allows a player to make a move
+    bool makeMove(Move& move);
     
     // Selects colours for board rendering
     void setBoardColour(GLuint boardColourStyle);
@@ -103,6 +112,9 @@ public:
 
     // Sets an index where pawn promoted
     void setPromotion(INDEX index);
+
+    // Allows changing of board state on the fly
+    void changeFlip();
 
     // ----- Destruction -----
 

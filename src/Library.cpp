@@ -101,6 +101,17 @@ INDEX Library::physToIndex(POINT phys) {
     return Library::gridToIndex(phys);
 }
 
+INDEX Library::flipIndex(INDEX index) {
+    // Find initial coords
+    INDEX x = index % GRID_SIZE;
+    INDEX y = index / GRID_SIZE;
+    // Flip y value and account for grid positioning
+    y = Library::map(y, 0, GRID_SIZE, GRID_SIZE - 1, -1);
+    // Repack data
+    index = y * GRID_SIZE + x;
+    return index;
+}
+
 
 
 GLfloat Library::map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax) {

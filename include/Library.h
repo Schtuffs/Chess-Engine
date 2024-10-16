@@ -33,6 +33,7 @@ public:
     static POINT physToGrid(POINT phys);
     static INDEX gridToIndex(POINT grid);
     static INDEX physToIndex(POINT phys);
+    static INDEX flipIndex(INDEX index);
     
     static GLfloat map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax);
 };

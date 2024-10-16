@@ -22,6 +22,8 @@ public:
     // Returns flag data
     FLAG getFlags();
 
+    void addFlags(FLAG flags);
+
     // Returns if this move exists or not
     bool isMove();
 

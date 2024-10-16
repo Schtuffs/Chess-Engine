@@ -6,7 +6,7 @@
 
 // ----- Creation -----
 
-BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
+BoardManager::BoardManager(Player& white, Player& black, GLenum boardColourStyle, bool flipBoard, const std::string& FEN) : m_whitePlayer(white), m_blackPlayer(black) {
     // Setup FEN for setting board
     this->m_resetFEN = FEN;
 
@@ -19,6 +19,7 @@ BoardManager::BoardManager(GLenum boardColourStyle, const std::string& FEN) {
     // Setting
     this->m_heldPieceIndex = CODE_INVALID;
     this->m_promotionIndex = CODE_INVALID;
+    this->m_flipBoard = flipBoard;
 }
 
 // ----- Read -----
@@ -34,9 +35,19 @@ void BoardManager::show() {
     // Render each piece
     //Render board
     for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        // Determine if indexes need to be swapped
+        int x = i % GRID_SIZE;
+        int y = i / GRID_SIZE;
+        // Only flip is player is human, its blacks turn, and board should flip
+        if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_BLACK && 
+            this->m_currentPlayer->Type() == PLAYER_TYPE_HUMAN && 
+            this->m_flipBoard) {
+
+            y = Library::map(y, 0, GRID_SIZE, GRID_SIZE, 0) - 1;
+        }
         // If there is a piece on the grid square
         if (this->m_grid[i] && !Piece::getFlag(this->m_grid[i], MASK_HELD)) {
-            this->m_renderer.render(this->m_grid[i], i % GRID_SIZE, i / GRID_SIZE);
+            this->m_renderer.render(this->m_grid[i], x, y);
         }
     }
 
@@ -66,6 +77,13 @@ void BoardManager::showBoard() {
     for (int y = 0; y < GRID_SIZE; y++) {
         for (int x = 0; x < GRID_SIZE; x++) {
             INDEX index = y * GRID_SIZE + x;
+
+            // Flip board if specified
+            if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_BLACK && 
+                this->m_currentPlayer->Type() == PLAYER_TYPE_HUMAN && 
+                this->m_flipBoard) {
+                index = Library::flipIndex(index);
+            }
 
             // Render move squares with a slightly changed colour mask
             COLOUR mask = { 0.0f, 0.0f, 0.0f};
@@ -102,10 +120,17 @@ void BoardManager::showBoard() {
     }
 }
 
-void BoardManager::check(INDEX index) {
+void BoardManager::ManageInput(INDEX index) {
     // Do nothing if board is in checkmate or stalemate
     if (this->m_checkmate || this->m_stalemate) {
         return;
+    }
+
+    // If piece is black and a human, flip inputs
+    if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_BLACK && 
+            this->m_currentPlayer->Type() == PLAYER_TYPE_HUMAN && 
+            this->m_flipBoard) {
+                index = Library::flipIndex(index);
     }
 
     // First, check if promotion is happening
@@ -123,7 +148,7 @@ void BoardManager::check(INDEX index) {
         Move move = this->m_moveManager.isLegal(index);
         // Only switch turn if piece was placed elsewhere
         if (index != this->m_heldPieceIndex && move.isMove()) {
-            this->m_currentTurn = (this->m_currentTurn == PIECE_WHITE ? PIECE_BLACK : PIECE_WHITE);
+            this->m_currentPlayer = (this->m_currentPlayer->Colour() == PLAYER_COLOUR_WHITE ? &this->m_blackPlayer : &this->m_whitePlayer);
             this->release(move);
         }
         else if (move.isMove()) {
@@ -221,6 +246,14 @@ void BoardManager::checkCheckmate(Move& move) {
 
 // ----- Update -----
 
+bool BoardManager::makeMove(Move& move) {
+    if (this->m_moveManager.isLegal(move)) {
+        this->release(move);
+        return true;
+    }
+    return false;
+}
+
 void BoardManager::setBoardColour(GLuint boardColourStyle) {
     switch (boardColourStyle) {
     case BOARD_BLACK_WHITE:
@@ -296,7 +329,7 @@ void BoardManager::clearBoard() {
     // Reset move counts
     this->m_totalTurns = 0;
     this->m_50moveRule = 0;
-    this->m_currentTurn = PIECE_WHITE;
+    this->m_currentPlayer = &this->m_whitePlayer;
 
     // Unholds piece and clears moves
     this->m_heldPieceIndex = CODE_INVALID;
@@ -318,7 +351,7 @@ void BoardManager::resetBoard() {
     std::string metadata = this->m_resetFEN.substr(this->m_resetFEN.find(' ') + 1);
 
     // Load metadata
-    this->getMetadata(metadata);
+    this->readMetadata(metadata);
 
     // Loop through each index
     // Starts from top left, goes to bottom right
@@ -387,9 +420,13 @@ void BoardManager::setPromotion(INDEX index) {
         this->m_promotionIndex = -1;
 }
 
+void BoardManager::changeFlip() {
+    this->m_flipBoard = !this->m_flipBoard;
+}
+
 // ----- Update ----- Hidden -----
 
-void BoardManager::getMetadata(std::string& metadata) {
+void BoardManager::readMetadata(std::string& metadata) {
     int currentField = 0;
     for (size_t i = 0; i < metadata.length(); i++) {
         // Increase field upon finding space
@@ -401,7 +438,7 @@ void BoardManager::getMetadata(std::string& metadata) {
         switch (currentField) {
         // Current move
         case 0:
-            this->m_currentTurn = (metadata[i] == 'b' ? PIECE_BLACK : PIECE_WHITE);
+            this->m_currentPlayer = (metadata[i] == 'w' ? &this->m_whitePlayer : &this->m_blackPlayer);
             break;
         // Castling rights
         case 1:
@@ -557,7 +594,7 @@ void BoardManager::promotionSelection(INDEX index) {
 void BoardManager::hold(INDEX index) {
     // Checks piece colour
     PIECE piece = this->m_grid[index];
-    if (this->m_currentTurn != Piece::getFlag(piece, MASK_COLOUR)) {
+    if (this->m_currentPlayer->Colour() != Piece::getFlag(piece, MASK_COLOUR)) {
         return;
     }
 
@@ -566,7 +603,7 @@ void BoardManager::hold(INDEX index) {
     this->m_moveManager.calculateMoves(index, this->m_grid, true);
 }
 
-void BoardManager::release(Move move) {
+void BoardManager::release(Move& move) {
     // Put held piece down on specified square
     PIECE piece = this->m_grid[this->m_heldPieceIndex];
     Piece::removeFlag(&piece, MASK_HELD);

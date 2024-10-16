@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "BoardManager.h"
+#include "Player.h"
 #include "WindowManager.h"
 #include "EventManager.h"
 #include "FpsTracker.h"
@@ -17,8 +18,12 @@ int main(void) {
     WindowManager::init(WINDOW_SIZE_REGULAR);
     WindowManager::initCallbacks();
 
+    // Create players for board
+    Player white(PLAYER_COLOUR_WHITE);
+    Player black(PLAYER_COLOUR_BLACK);
+
     // Create board manager
-    BoardManager board(BOARD_GREEN_CREAM);
+    BoardManager board(white, black, BOARD_GREEN_CREAM);
     WindowManager::setBoard(board);
 
     // Create EventManager

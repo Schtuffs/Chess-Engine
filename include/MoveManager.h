@@ -74,6 +74,7 @@ public:
 
     // Returns a move if the move is legal
     Move isLegal(INDEX index);
+    bool isLegal(Move& move);
 
     // Gets unchecked valid moves
     std::vector<Move> getValidMoves();

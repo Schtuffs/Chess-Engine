@@ -24,6 +24,10 @@ FLAG Move::getFlags() {
     return (this->m_moveData & MASK_MOVE_FLAGS);
 }
 
+void Move::addFlags(FLAG flags) {
+    this->m_moveData |= flags;
+}
+
 bool Move::isMove() {
     return (this->m_moveData != -1 ? true : false);
 }

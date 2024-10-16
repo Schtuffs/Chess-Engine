@@ -9,6 +9,19 @@
 
 
 
+// ----- Player Defines
+
+#define PLAYER_TYPE_HUMAN       0b0000000000000001
+#define PLAYER_TYPE_AI          0b0000000000000010
+
+#define PLAYER_COLOUR_WHITE     0b0000000000001000
+#define PLAYER_COLOUR_BLACK     0b0000000000010000
+
+#define PLAYER_TYPE             (PLAYER_TYPE_AI | PLAYER_TYPE_HUMAN)
+#define PLAYER_COLOUR           (PLAYER_COLOUR_BLACK | PLAYER_COLOUR_WHITE)
+
+
+
 // ----- Window Defines -----
 
 // Only affects the refreshing of the window, not the total speed of the program
