@@ -25,6 +25,6 @@ FLAG Move::getFlags() {
 }
 
 bool Move::isMove() {
-    return this->m_moveData;
+    return (this->m_moveData != -1 ? true : false);
 }
 

@@ -74,8 +74,7 @@ void Piece::addFlag(PIECE* piece, FLAG flag) {
 
 void Piece::removeFlag(PIECE* piece, FLAG flag) {
     // If the flag has multiple attributes, all have to be added to ensure proper removal
-    *piece |= flag;
-    *piece ^= flag;
+    *piece &= ~flag;
 }
 
 bool Piece::hasFlag(PIECE piece, FLAG flag) {

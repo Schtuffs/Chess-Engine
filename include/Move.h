@@ -8,10 +8,10 @@
 class Move {
 private:
     // Stores the data for a move
-    unsigned short m_moveData;
+    short m_moveData;
 
 public:
-    Move(INDEX start = 0, INDEX target = 0, FLAG flags = 0);
+    Move(INDEX start = -1, INDEX target = 0, FLAG flags = 0);
 
     // Returns start index of move
     INDEX getStart();

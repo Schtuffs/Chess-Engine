@@ -136,9 +136,7 @@ void BoardManager::check(INDEX index) {
     if (0 <= index && index < GRID_SIZE * GRID_SIZE) {
         if (this->m_grid[index]) {
             // Stores held piece
-            if (this->hold(index)) {
-                this->m_moveManager.calculateMoves(index, this->m_grid, true);
-            }
+            this->hold(index);
         }
     }
 }
@@ -556,24 +554,19 @@ void BoardManager::promotionSelection(INDEX index) {
     }
 }
 
-bool BoardManager::hold(INDEX index) {
+void BoardManager::hold(INDEX index) {
     // Checks piece colour
     PIECE piece = this->m_grid[index];
     if (this->m_currentTurn != Piece::getFlag(piece, MASK_COLOUR)) {
-        return false;
+        return;
     }
 
     this->m_heldPieceIndex = index;
     Piece::addFlag(&this->m_grid[m_heldPieceIndex], MASK_HELD);
-
-    return true;
+    this->m_moveManager.calculateMoves(index, this->m_grid, true);
 }
 
 void BoardManager::release(Move move) {
-    // First, unchecks kings
-    Piece::removeFlag(&this->m_grid[this->m_whiteKing], MOVE_CHECK);
-    Piece::removeFlag(&this->m_grid[this->m_blackKing], MOVE_CHECK);
-    
     // Put held piece down on specified square
     PIECE piece = this->m_grid[this->m_heldPieceIndex];
     Piece::removeFlag(&piece, MASK_HELD);
@@ -581,6 +574,9 @@ void BoardManager::release(Move move) {
     
     // Make sure not to delete piece if it was not moved
     if (move.getStart() != move.getTarget()) {
+        // First, unchecks kings
+        Piece::removeFlag(&this->m_grid[this->m_whiteKing], MOVE_CHECK);
+        Piece::removeFlag(&this->m_grid[this->m_blackKing], MOVE_CHECK);
         this->m_grid[move.getStart()] = PIECE_INVALID;
     }
 

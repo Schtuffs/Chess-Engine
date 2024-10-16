@@ -42,6 +42,10 @@ private:
     // Returns false immediately upon king capture, should not happen and must be dealt with
     bool calculatePawnMoves(INDEX startIndex, const PIECE* grid);
 
+    // Calculates the attacking move for pawns
+    // Needed for preventing king from walking into pawn attack
+    bool calculatePawnAttackMoves(INDEX start, const PIECE* grid);
+
 
 
     // ----- Move ----- List ----- Functions -----

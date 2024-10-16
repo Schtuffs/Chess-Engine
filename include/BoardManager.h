@@ -62,7 +62,7 @@ private:
     void promotionSelection(INDEX index);
 
     // Grabs a piece and holds it
-    bool hold(INDEX index);
+    void hold(INDEX index);
 
     // Releases the piece
     void release(Move move);
@@ -89,9 +89,6 @@ public:
 
     // Checks if there are any actions the board needs to take before rendering
     void check(INDEX index);
-
-    // Returns the position of a king
-    INDEX kingPos(FLAG colour);
 
     // ----- Update -----
     

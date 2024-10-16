@@ -7,13 +7,18 @@
 #include "EventManager.h"
 #include "FpsTracker.h"
 
+// Need to add
+// Stalemate with only knight/bishop - insufficient materials
+// 50 move rule implementation
+// 3-fold repitition
+
 int main(void) {
     // Window initialization functions
     WindowManager::init(WINDOW_SIZE_REGULAR);
     WindowManager::initCallbacks();
 
     // Create board manager
-    BoardManager board(BOARD_BROWN_BROWN);
+    BoardManager board(BOARD_GREEN_CREAM);
     WindowManager::setBoard(board);
 
     // Create EventManager

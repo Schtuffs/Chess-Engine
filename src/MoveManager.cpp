@@ -46,7 +46,10 @@ bool MoveManager::calculateMoves(INDEX startIndex, const PIECE* grid, bool calcu
     bool capturedKing = this->calculateCardinalMoves(startIndex, grid);
     capturedKing |= this->calculateDiagonalMoves(startIndex, grid);
     capturedKing |= this->calculateKnightMoves(startIndex, grid);
-    capturedKing |= this->calculatePawnMoves(startIndex, grid);
+    if (calculateEnemyMoves)
+        capturedKing |= this->calculatePawnMoves(startIndex, grid);
+    else
+        capturedKing |= this->calculatePawnAttackMoves(startIndex, grid);
     capturedKing |= this->calculateKingMoves(startIndex, grid);
 
     // Calculated moves for enemies, removes moves that would result in capture of king
@@ -69,8 +72,6 @@ void MoveManager::clearValid() {
 void MoveManager::clearLegal() {
     this->m_legalMoves.clear();
 }
-
-// ----- Update ----- Hidden -----
 
 // ----- Move ----- Calculation ----- Functions -----
 
@@ -97,8 +98,7 @@ void MoveManager::calculateLegalMoves(INDEX index, const PIECE* grid) {
             FLAG targetColour = Piece::getFlag(editGrid[i], MASK_COLOUR);
             if (colour != targetColour && targetColour) {
                 // See if king is captured after the move
-                bool result = this->calculateMoves(i, editGrid, false);
-                if (result == MOVE_KING_CAPTURED) {
+                if (this->calculateMoves(i, editGrid, false) == MOVE_KING_CAPTURED) {
                     // King was captured, break out of loop since move is illegal
                     capturedKing = true;
                     break;
@@ -187,6 +187,7 @@ void MoveManager::calculateKingCastling(INDEX startIndex, const PIECE* grid) {
                 break;
             }
         }
+        // Add castling move to valid moves
         if (canCastle) {
             this->add(startIndex, startIndex + 2, MOVE_KING_CASTLE_KING, grid);
         }
@@ -208,6 +209,7 @@ void MoveManager::calculateKingCastling(INDEX startIndex, const PIECE* grid) {
                 break;
             }
         }
+        // Add castling move to valid moves
         if (canCastle) {
             this->add(startIndex, startIndex - 2, MOVE_KING_CASTLE_QUEEN, grid);
         }
@@ -371,6 +373,28 @@ bool MoveManager::calculatePawnMoves(INDEX startIndex, const PIECE* grid) {
     return capturedKing;
 }
 
+bool MoveManager::calculatePawnAttackMoves(INDEX start, const PIECE* grid) {
+    FLAG colour = Piece::getFlag(grid[start], MASK_COLOUR);
+    INDEX indexCheck = (colour == PIECE_WHITE ? GRID_SIZE : (-GRID_SIZE));
+
+    // Left attack check
+    bool capturedKing = MOVE_KING_NOT_CAPTURED;
+    Move moveleft(start, start + indexCheck - 1, MOVE_PAWN_ATTACK);
+    this->m_validMoves.push_back(moveleft);
+    if (Piece::getFlag(grid[moveleft.getTarget()], MASK_TYPE) == PIECE_KING) {
+        capturedKing = MOVE_KING_CAPTURED;
+    }
+
+    // Right attack check
+    Move moveright(start, start + indexCheck + 1, MOVE_PAWN_ATTACK);
+    this->m_validMoves.push_back(moveright);
+    if (Piece::getFlag(grid[moveright.getTarget()], MASK_TYPE) == PIECE_KING) {
+        capturedKing = MOVE_KING_CAPTURED;
+    }
+
+    return capturedKing;
+}
+
 
 
 // ----- Move ----- List ----- Functions -----
@@ -424,30 +448,24 @@ FLAG MoveManager::add(INDEX start, INDEX target, FLAG flags, const PIECE* grid) 
 }
 
 FLAG MoveManager::addPawn(INDEX start, INDEX target, FLAG flags, const PIECE* grid) {
-    // Checks if start and target are in same x
-    INDEX startX = start % GRID_SIZE;
-    INDEX targetX = target % GRID_SIZE;
-
     FLAG thisColour = Piece::getFlag(grid[start], MASK_COLOUR);
     FLAG targetColour = Piece::getFlag(grid[target], MASK_COLOUR);
 
-    // Checks for same x value movement
-    if (startX == targetX) {
-        // Checks theres no piece
-        if (grid[target] == 0) {
+    // Checks for pawn attack flag
+    if ((flags & MOVE_PAWN_ATTACK)) {
+        // Check colours are not equal and that the target has a piece
+        // Alternatively, checks if the piece is a phantom
+        if ((thisColour != targetColour && targetColour) || (grid[target] == PIECE_PHANTOM)) {
             this->addValid(Move(start, target, flags));
-            return MOVE_CONTINUE;
         }
+        // Colours not equal, or no piece
         return MOVE_END;
     }
-    // X values are not equal, this is a capture check
-
-    // Check colours are not equal and that the target has a piece
-    // Alternatively, checks if the piece is a phantom
-    if ((thisColour != targetColour && targetColour) || (grid[target] == PIECE_PHANTOM)) {
+    // Checks theres no piece
+    if (grid[target] == 0) {
         this->addValid(Move(start, target, flags));
+        return MOVE_CONTINUE;
     }
-    // Colours not equal, or no piece
     return MOVE_END;
 }
 
