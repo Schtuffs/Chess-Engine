@@ -172,7 +172,7 @@ void RenderManager::rect(COLOUR& colour, int x, int y, int width, int height) {
 
 void RenderManager::render(PIECE piece, int x, int y) {
     // Check to not try to render phantom pieces
-    if (piece >= PIECE_PHANTOM) {
+    if (piece == PIECE_PHANTOM) {
         return;
     }
     

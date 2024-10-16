@@ -1,18 +1,21 @@
 #include "WindowManager.h"
 
 #include "Callbacks.h"
+#include "FpsTracker.h"
 
 namespace WindowManager {
     static POINT s_winSize;
     static GLFWwindow* s_window;
+    static double s_prevTime = 0;
 
     // Holds pointer to board for showing
     static BoardManager* s_board;
 
     // Creation
 
-    void init() {
-        s_winSize = { 800, 800 };
+    void init(int winSizeParam) {
+        // Sets window to defined size
+        s_winSize = { winSizeParam, winSizeParam };
 
         // Init glfw
         if (!glfwInit()) {
@@ -71,9 +74,22 @@ namespace WindowManager {
         return s_winSize;
     }
 
-    void show() {
-        s_board->show();
-        glfwSwapBuffers(s_window);
+    void show(bool updateAlways) {
+        // Only renders and swaps buffers at WINDOW_MAX_FPS to save GPU
+        // Allows for other calculations to happen more
+        double current = clock();
+        double deltaTime = ((double)CLOCKS_PER_SEC / (double)WINDOW_MAX_FPS) - (double)(current - s_prevTime);
+        if ((0 >= deltaTime) || (updateAlways)) {
+            // Accounts for extra offset of frame times
+            // If the frame took an extra 0.01 clocks,
+            // The current time is set back by that 0.01 to allow
+            // For proper counting of frames
+            // Ex: s_prevTime = 1800 + (-0.23);
+            // s_prevTime = 1799.77
+            s_prevTime = current + deltaTime;
+            s_board->show();
+            glfwSwapBuffers(s_window);
+        }
     }
 
     void poll() {

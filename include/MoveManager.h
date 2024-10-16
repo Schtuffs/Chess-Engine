@@ -9,9 +9,9 @@
 
 class MoveManager {
 private:
-    Move m_move;
+    std::vector<Move> m_validMoves, m_legalMoves;
     
-    // ----- Update -----
+    // ----- Move ----- Calculation ----- Functions -----
 
     // Calculates and determines if enemy captured king
     void calculateLegalMoves(INDEX colour, const PIECE* grid);
@@ -42,6 +42,25 @@ private:
     // Returns false immediately upon king capture, should not happen and must be dealt with
     bool calculatePawnMoves(INDEX startIndex, const PIECE* grid);
 
+
+
+    // ----- Move ----- List ----- Functions -----
+
+    // Call this function to add a move to the move list
+    FLAG add(INDEX start, INDEX target, FLAG flags, const PIECE* grid);
+
+    // Pawn is a special case, has its own add logic
+    FLAG addPawn(INDEX start, INDEX target, FLAG flags, const PIECE* grid);
+
+    // Called by add function, it decides which list to add to
+    void addValid(Move move);
+
+    // Called by add function, it decides which list to add to
+    void addLegal(Move& move);
+
+    void clearValid();
+    void clearLegal();
+
 public:
     // ----- Creation -----
 
@@ -50,10 +69,13 @@ public:
     // ----- Read -----
 
     // Returns a move if the move is legal
-    MOVE isLegal(INDEX index);
+    Move isLegal(INDEX index);
 
+    // Gets unchecked valid moves
+    std::vector<Move> getValidMoves();
+    
     // Gets calculated legal moves
-    std::vector<MOVE> getMoves();
+    std::vector<Move> getLegalMoves();
 
     // ----- Update -----
     

@@ -1,11 +1,21 @@
 #pragma once
 
-// ----- Library defines -----
+// ----- Generic defines -----
 
 #define GRID_SIZE       8
 #define TOTAL_TEXTURES  12
 #define CHAR_TO_INT     97
-#define CODE_INVALID    -1
+#define CODE_INVALID    0x7fff
+
+
+
+// ----- Window Defines -----
+
+// Only affects the refreshing of the window, not the total speed of the program
+// Allows for more calculations per second for everything else
+#define WINDOW_MAX_FPS          120
+#define WINDOW_SIZE_REGULAR     800
+#define WINDOW_SIZE_MICRO       120
 
 
 
@@ -13,21 +23,22 @@
 
 // Stores piece information and flags
 typedef unsigned short PIECE;
-// Same type as piece, but used differently
-typedef PIECE FLAG;
+// Must be at least as large as a piece
+typedef unsigned short FLAG;
+// Stores indexes for indexing grids
+typedef short INDEX;
 
-#define PIECE_INVALID   0x0
-#define PIECE_PAWN      0x1
-#define PIECE_KNIGHT    0x2
-#define PIECE_BISHOP    0x3
-#define PIECE_ROOK      0x4
-#define PIECE_QUEEN     0x5
-#define PIECE_KING      0x6
-#define PIECE_BLOCK     0x7
-#define PIECE_PHANTOM   0x7FFF
+#define PIECE_INVALID           0x0
+#define PIECE_PAWN              0x1
+#define PIECE_KNIGHT            0x2
+#define PIECE_BISHOP            0x3
+#define PIECE_ROOK              0x4
+#define PIECE_QUEEN             0x5
+#define PIECE_KING              0x6
+#define PIECE_PHANTOM           0x7
 
-#define PIECE_WHITE     0x08
-#define PIECE_BLACK     0x10
+#define PIECE_WHITE             0x08
+#define PIECE_BLACK             0x10
 
 #define MASK_BLACK              0b0000000000010000
 #define MASK_WHITE              0b0000000000001000
@@ -42,21 +53,10 @@ typedef PIECE FLAG;
 #define MASK_FLAG_3             0b0100000000000000
 #define MASK_FLAG_4             0b1000000000000000
 
-// Piece specific masks
-
-#define MASK_PAWN_FIRST_MOVE    0b0001000000000000
-#define MASK_PAWN_EN_PASSENT    0b0010000000000000
-#define MASK_KING_CASTLE_KING   0b0001000000000000
-#define MASK_KING_CASTLE_QUEEN  0b0010000000000000
-#define MASK_KING_CASTLING      (MASK_KING_CASTLE_KING | MASK_KING_CASTLE_QUEEN)
-#define MASK_ROOK_CAN_CASTLE    0b0010000000000000
-
 
 
 
 // ----- Board Defines -----
-
-typedef int INDEX;
 
 #define BOARD_BLACK_WHITE           0x30
 #define BOARD_BROWN_BROWN           0x31
@@ -78,16 +78,27 @@ constexpr char startFEN[]   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk
 
 // ----- Move Defines -----
 
-#define MOVE_CONTINUE       1
-#define MOVE_END            2
-#define MOVE_CAPTURE_KING   3
+#define MOVE_CONTINUE           1
+#define MOVE_END                2
+#define MOVE_CAPTURE_KING       3
 
 #define MOVE_KING_CAPTURED      true
 #define MOVE_KING_NOT_CAPTURED  false
 
-#define MASK_MOVE_START          0b0000000000111111
-#define MASK_MOVE_TARGET         0b0000111111000000
-#define MASK_MOVE_FLAGS          0b1111000000000000
+#define MASK_MOVE_START         0b0000000000111111
+#define MASK_MOVE_TARGET        0b0000111111000000
+#define MASK_MOVE_FLAGS         0b1111000000000000
+
+// Piece specific move masks
+
+#define MOVE_PAWN_FIRST_MOVE    0b0001000000000000
+#define MOVE_PAWN_MOVE_TWO      0b0010000000000000
+#define MOVE_PAWN_ATTACK        0b0100000000000000
+#define MOVE_KING_CASTLE_KING   0b0001000000000000
+#define MOVE_KING_CASTLE_QUEEN  0b0010000000000000
+#define MOVE_KING_CASTLING      (MOVE_KING_CASTLE_KING | MOVE_KING_CASTLE_QUEEN)
+#define MOVE_ROOK_CAN_CASTLE    0b0001000000000000
+#define MOVE_CHECK              0b1000000000000000
 
  
 

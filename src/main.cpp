@@ -9,7 +9,7 @@
 
 int main(void) {
     // Window initialization functions
-    WindowManager::init();
+    WindowManager::init(WINDOW_SIZE_REGULAR);
     WindowManager::initCallbacks();
 
     // Create board manager

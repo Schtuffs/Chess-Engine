@@ -7,9 +7,9 @@ namespace {
 
     void removePawnFlags(INDEX index, PIECE* grid) {
         // Removes first move mask
-        Piece::removeFlag(&grid[index], MASK_PAWN_FIRST_MOVE);
+        Piece::removeFlag(&grid[index], MOVE_PAWN_FIRST_MOVE);
         // Remove en passent
-        Piece::removeFlag(&grid[index], MASK_PAWN_EN_PASSENT);
+        Piece::removeFlag(&grid[index], MOVE_PAWN_MOVE_TWO);
 
         // Check if pawn has reached the edge of the board
             // White Pawn                             // Black Pawn
@@ -28,7 +28,7 @@ namespace {
     }
 
     void removeRookFlags(INDEX index, PIECE* grid) {
-        Piece::removeFlag(&grid[index], MASK_ROOK_CAN_CASTLE);
+        Piece::removeFlag(&grid[index], MOVE_ROOK_CAN_CASTLE);
     }
 
     void removeQueenFlags(INDEX index, PIECE* grid) {
@@ -37,7 +37,7 @@ namespace {
 
     void removeKingFlags(INDEX index, PIECE* grid) {
     // Check if king can castle
-    if(!Piece::getFlag(grid[index], MASK_KING_CASTLING)) {
+    if(!Piece::getFlag(grid[index], MOVE_KING_CASTLING)) {
         // No castling, return
         return;
     }
@@ -48,13 +48,13 @@ namespace {
     // Detecs if king moved more that 1 square
     if (abs(movedSquares) > 1) {
         // Negative (King side rook), king has castling rights on this side
-        if (movedSquares < 0 && Piece::getFlag(grid[index], MASK_KING_CASTLE_KING)) {
+        if (movedSquares < 0 && Piece::getFlag(grid[index], MOVE_KING_CASTLE_KING)) {
             INDEX rookIndex = (index + movedSquares) + ((GRID_SIZE - 1) / 2);
             grid[index - 1] = grid[rookIndex];
             grid[rookIndex] = 0;
         }
         // Positive (Queen side rook), king has castling rights on this side
-        else if (movedSquares > 0 && Piece::getFlag(grid[index], MASK_KING_CASTLE_QUEEN)) {
+        else if (movedSquares > 0 && Piece::getFlag(grid[index], MOVE_KING_CASTLE_QUEEN)) {
             INDEX rookIndex = (index + movedSquares) - (GRID_SIZE / 2);
             grid[index + 1] = grid[rookIndex];
             grid[rookIndex] = 0;
@@ -62,8 +62,8 @@ namespace {
     }
 
     // Finally, remove all castling rights always
-    Piece::removeFlag(&grid[index], MASK_KING_CASTLE_KING);
-    Piece::removeFlag(&grid[index], MASK_KING_CASTLE_QUEEN);
+    Piece::removeFlag(&grid[index], MOVE_KING_CASTLE_KING);
+    Piece::removeFlag(&grid[index], MOVE_KING_CASTLE_KING);
 }
 
 }
@@ -73,11 +73,9 @@ void Piece::addFlag(PIECE* piece, FLAG flag) {
 }
 
 void Piece::removeFlag(PIECE* piece, FLAG flag) {
-    if ((*piece & flag)) {
-        // If the flag has multiple attributes, all have to be added to ensure proper removal
-        *piece |= flag;
-        *piece ^= flag;
-    }
+    // If the flag has multiple attributes, all have to be added to ensure proper removal
+    *piece |= flag;
+    *piece ^= flag;
 }
 
 bool Piece::hasFlag(PIECE piece, FLAG flag) {

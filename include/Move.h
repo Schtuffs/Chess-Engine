@@ -7,28 +7,23 @@
 
 class Move {
 private:
-    std::vector<MOVE> m_validMoves, m_legalMoves;
-
-    void p_addValid(INDEX startIndex, INDEX targetIndex, FLAG flags);
-    int p_addPawn(INDEX startIndex, INDEX targetIndex, FLAG flags, const PIECE* grid);
+    // Stores the data for a move
+    unsigned short m_moveData;
 
 public:
-    Move();
+    Move(INDEX start = 0, INDEX target = 0, FLAG flags = 0);
 
-    int addValid(INDEX startIndex, INDEX targetIndex, FLAG flags, const PIECE* grid);
-    void addLegal(MOVE move);
-    MOVE isLegal(INDEX testPos);
+    // Returns start index of move
+    INDEX getStart();
 
-    std::vector<MOVE> getValidMoves();
-    std::vector<MOVE> getLegalMoves();
+    // Returns target index (AKA where move is going)
+    INDEX getTarget();
 
-    static INDEX getStart(MOVE move);
-    static INDEX getTarget(MOVE move);
-    static FLAG getFlags(MOVE move);
-    static FLAG getFlag(MOVE move, FLAG flag);
+    // Returns flag data
+    FLAG getFlags();
 
-    void clearValid();
-    void clearLegal();
+    // Returns if this move exists or not
+    bool isMove();
 
     ~Move();
 };

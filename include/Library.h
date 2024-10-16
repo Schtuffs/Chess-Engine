@@ -13,10 +13,6 @@ typedef struct point {
     int x, y;
 } POINT;
 
-typedef struct move {
-    INDEX moveInfo;
-} MOVE;
-
 // Mostly namespace, however stores next texture slot
 class Library {
 private:

@@ -44,13 +44,17 @@ void BoardManager::show() {
     if (this->m_heldPieceIndex != CODE_INVALID) {
         POINT mousePos = WindowManager::cursorPos();
         PIECE held = this->m_grid[m_heldPieceIndex];
-        // Piece::removeFlag(&held, MASK_HELD);
         this->m_renderer.render(held, mousePos.x, mousePos.y);
     }
 
     // Render promotion screen if promotion is valid
     if (this->m_promotionIndex != CODE_INVALID) {
         this->showPromotionOptions();
+    }
+
+    // If board is in a state of checkmate
+    if (this->m_checkmate) {
+        // Render checkmate screen
     }
 }
 
@@ -74,9 +78,9 @@ void BoardManager::showBoard() {
                 }
 
                 // Check for moves and render as red
-                auto moves = this->m_moveManager.getMoves();
-                for (MOVE move : moves) {
-                    if (index == Move::getTarget(move)) {
+                auto moves = this->m_moveManager.getLegalMoves();
+                for (Move& move : moves) {
+                    if (index == move.getTarget()) {
                         mask.r = 0.3f;
                         mask.g = -0.3f;
                         mask.b = -0.3f;
@@ -99,6 +103,11 @@ void BoardManager::showBoard() {
 }
 
 void BoardManager::check(INDEX index) {
+    // Do nothing if board is in checkmate or stalemate
+    if (this->m_checkmate || this->m_stalemate) {
+        return;
+    }
+
     // First, check if promotion is happening
     if (this->m_promotionIndex != CODE_INVALID) {
         // Determine which option was hit
@@ -111,14 +120,14 @@ void BoardManager::check(INDEX index) {
     // If a piece is held, try to release it
     if (this->m_heldPieceIndex != CODE_INVALID) {
         // Store piece incase of valid
-        MOVE move = this->m_moveManager.isLegal(index);
+        Move move = this->m_moveManager.isLegal(index);
         // Only switch turn if piece was placed elsewhere
-        if (index != this->m_heldPieceIndex && Move::getStart(move)) {
+        if (index != this->m_heldPieceIndex && move.isMove()) {
             this->m_currentTurn = (this->m_currentTurn == PIECE_WHITE ? PIECE_BLACK : PIECE_WHITE);
-            this->release(move, true);
+            this->release(move);
         }
-        else if (Move::getStart(move)) {
-            this->release(move, false);
+        else if (move.isMove()) {
+            this->release(move);
         }
         return;
     }
@@ -162,6 +171,54 @@ void BoardManager::showPromotionOptions() {
         this->m_renderer.render(piece, x, y);
     }
     
+}
+
+void BoardManager::checkCheckmate(Move& move) {
+    FLAG colour = Piece::getFlag(this->m_grid[move.getTarget()], MASK_COLOUR);
+    
+    // Check if new position checks the king
+    if (this->m_moveManager.calculateMoves(move.getTarget(), this->m_grid, false)) {
+        // Check black king
+        if (colour == PIECE_WHITE) {
+            Piece::addFlag(&this->m_grid[this->m_blackKing], MOVE_CHECK);
+        }
+        // Check white king
+        else {
+            Piece::addFlag(&this->m_grid[this->m_whiteKing], MOVE_CHECK);
+        }
+    }
+
+    // Checks if there are any legal moves
+    bool legalMoveExists = false;
+    
+    // Loop through each piece to determine if they can stop checkmate
+    // If not, checkmate
+    for (INDEX i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        this->m_moveManager.clear();
+        if (Piece::getFlag(this->m_grid[i], MASK_COLOUR) != colour) {
+            this->m_moveManager.calculateMoves(i, this->m_grid, true);
+            auto moves = this->m_moveManager.getLegalMoves();
+            if (moves.size() > 1) {
+                legalMoveExists = true;
+                break;
+            }
+        }
+    }
+
+    if (!legalMoveExists) {
+        // King is in check with no moves
+        if ((colour == PIECE_WHITE && Piece::getFlag(this->m_grid[this->m_blackKing], MOVE_CHECK)) ||
+            (colour == PIECE_BLACK && Piece::getFlag(this->m_grid[this->m_whiteKing], MOVE_CHECK))) {
+                // CHECKMATE
+                this->m_checkmate = true;
+                std::cout << "CHECKMATE" << std::endl;
+            }
+        else {
+            // King is not in check with no moves
+            this->m_stalemate = true;
+            std::cout << "STALEMATE" << std::endl;
+        }
+    }
 }
 
 // ----- Update -----
@@ -250,6 +307,10 @@ void BoardManager::clearBoard() {
     // Phantom
     this->m_phantomAttack = CODE_INVALID;
     this->m_phantomLocation = CODE_INVALID;
+
+    // Reset checkmate and stalemate
+    this->m_checkmate = false;
+    this->m_stalemate = false;
 }
 
 void BoardManager::resetBoard() {
@@ -283,7 +344,7 @@ void BoardManager::resetBoard() {
         // Determine what char it is
         else {
             FLAG pieceColour = (isupper(c) ? PIECE_WHITE : PIECE_BLACK);
-            FLAG pieceType;
+            FLAG pieceType = 0;
             switch(c) {
             case 'p':
             case 'P':
@@ -415,10 +476,10 @@ void BoardManager::setMetadata() {
                 // White pawn on start square
                 int y = i / GRID_SIZE;
                 if (y == 1 && pieceColour == PIECE_WHITE) {
-                    Piece::addFlag(&this->m_grid[i], MASK_PAWN_FIRST_MOVE);
+                    Piece::addFlag(&this->m_grid[i], MOVE_PAWN_FIRST_MOVE);
                 }
                 else if (y == (GRID_SIZE - 2) && pieceColour == PIECE_BLACK) {
-                    Piece::addFlag(&this->m_grid[i], MASK_PAWN_FIRST_MOVE);
+                    Piece::addFlag(&this->m_grid[i], MOVE_PAWN_FIRST_MOVE);
                 }
             }
             break;
@@ -429,11 +490,11 @@ void BoardManager::setMetadata() {
         case PIECE_ROOK:
             // Queen side castling
             if (i % GRID_SIZE == 0) {
-                Piece::addFlag(&this->m_grid[i], MASK_ROOK_CAN_CASTLE);
+                Piece::addFlag(&this->m_grid[i], MOVE_ROOK_CAN_CASTLE);
             }
             // King side castling
             if (i % GRID_SIZE == GRID_SIZE - 1) {
-                Piece::addFlag(&this->m_grid[i], MASK_ROOK_CAN_CASTLE);
+                Piece::addFlag(&this->m_grid[i], MOVE_ROOK_CAN_CASTLE);
             }
             break;
         case PIECE_QUEEN:
@@ -441,20 +502,22 @@ void BoardManager::setMetadata() {
         case PIECE_KING:
             // White meta
             if (pieceColour == PIECE_WHITE) {
+                this->m_whiteKing = i;
                 if (this->m_castling[BOARD_CASTLING_WHITE_KING]) {
-                    Piece::addFlag(&this->m_grid[i], MASK_KING_CASTLE_KING);
+                    Piece::addFlag(&this->m_grid[i], MOVE_KING_CASTLE_KING);
                 }
                 if (this->m_castling[BOARD_CASTLING_WHITE_QUEEN]) {
-                    Piece::addFlag(&this->m_grid[i], MASK_KING_CASTLE_QUEEN);
+                    Piece::addFlag(&this->m_grid[i], MOVE_KING_CASTLE_QUEEN);
                 }
             }
             // Black meta
             else {
+                this->m_blackKing = i;
                 if (this->m_castling[BOARD_CASTLING_BLACK_KING]) {
-                    Piece::addFlag(&this->m_grid[i], MASK_KING_CASTLE_KING);
+                    Piece::addFlag(&this->m_grid[i], MOVE_KING_CASTLE_KING);
                 }
                 if (this->m_castling[BOARD_CASTLING_BLACK_QUEEN]) {
-                    Piece::addFlag(&this->m_grid[i], MASK_KING_CASTLE_QUEEN);
+                    Piece::addFlag(&this->m_grid[i], MOVE_KING_CASTLE_QUEEN);
                 }
             }
             break;
@@ -506,66 +569,68 @@ bool BoardManager::hold(INDEX index) {
     return true;
 }
 
-void BoardManager::release(MOVE move, bool moved) {
-    // Check if move put king into check
-    FLAG kingChecked = Move::getFlag(move, MASK_KING_IN_CHECK);
-    if (kingChecked) {
-        // this->m_moveManager.calculateMoves()
-    }
+void BoardManager::release(Move move) {
+    // First, unchecks kings
+    Piece::removeFlag(&this->m_grid[this->m_whiteKing], MOVE_CHECK);
+    Piece::removeFlag(&this->m_grid[this->m_blackKing], MOVE_CHECK);
     
     // Put held piece down on specified square
     PIECE piece = this->m_grid[this->m_heldPieceIndex];
     Piece::removeFlag(&piece, MASK_HELD);
-    this->m_grid[Move::getTarget(move)] = piece;
+    this->m_grid[move.getTarget()] = piece;
     
     // Make sure not to delete piece if it was not moved
-    if (Move::getStart(move) != Move::getTarget(move)) {
-        this->m_grid[Move::getStart(move)] = 0;
+    if (move.getStart() != move.getTarget()) {
+        this->m_grid[move.getStart()] = PIECE_INVALID;
     }
+
+    // Check if move put king into check
+    this->checkCheckmate(move);
     
     // Clear old data
     this->m_heldPieceIndex = CODE_INVALID;
     this->m_moveManager.clear();
 
     // Deal with phantom
-    this->managePhantom(Move::getTarget(move), piece);
+    this->managePhantom(move);
 
-    if (moved) {
-        Piece::removeFlags(Move::getTarget(move), this->m_grid);
+    if (move.getStart() != move.getTarget()) {
+        Piece::removeFlags(move.getTarget(), this->m_grid);
     }
 }
 
-void BoardManager::managePhantom(INDEX index, PIECE piece) {
+void BoardManager::managePhantom(Move move) {
+    INDEX target = move.getTarget();
     // Check if pawn in on phantom square
-    FLAG type = Piece::getFlag(this->m_grid[index], MASK_TYPE);
-    if (type == PIECE_PAWN && index == this->m_phantomLocation) {
-        this->m_grid[m_phantomAttack] = 0;
+    FLAG type = Piece::getFlag(this->m_grid[target], MASK_TYPE);
+    if (type == PIECE_PAWN && target == this->m_phantomLocation) {
+        this->m_grid[m_phantomAttack] = PIECE_INVALID;
     }
     
     // Remove phantom always
     if (0 <= this->m_phantomLocation && this->m_phantomLocation < GRID_SIZE * GRID_SIZE) {
         if (this->m_grid[this->m_phantomLocation] == PIECE_PHANTOM){
-            this->m_grid[m_phantomLocation] = 0;
+            this->m_grid[m_phantomLocation] = PIECE_INVALID;
             this->m_phantomLocation = CODE_INVALID;
             this->m_phantomAttack = CODE_INVALID;
         }
     }
 
     // Check if pawn
-    if (Piece::getFlag(this->m_grid[index], MASK_TYPE) == PIECE_PAWN) {
+    if (Piece::getFlag(this->m_grid[target], MASK_TYPE) == PIECE_PAWN) {
         // Check if phantom should be created
-        FLAG enPassent = Piece::getFlag(piece, MASK_PAWN_EN_PASSENT);
-        if (enPassent) {
-            FLAG colour = Piece::getFlag(piece, MASK_COLOUR);
+        FLAG moveTwo = (move.getFlags() & MOVE_PAWN_MOVE_TWO);
+        if (moveTwo) {
+            FLAG colour = Piece::getFlag(this->m_grid[target], MASK_COLOUR);
             // White side phantom
             if (colour == PIECE_WHITE) {
-                this->m_phantomLocation = index - GRID_SIZE;
+                this->m_phantomLocation = target - GRID_SIZE;
             }
             // Black side phantom
             else {
-                this->m_phantomLocation = index + GRID_SIZE;
+                this->m_phantomLocation = target + GRID_SIZE;
             }
-            this->m_phantomAttack = index;
+            this->m_phantomAttack = target;
             this->m_grid[m_phantomLocation] = PIECE_PHANTOM;
         }
     }

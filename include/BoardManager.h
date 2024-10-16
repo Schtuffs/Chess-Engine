@@ -24,6 +24,7 @@ private:
     INDEX m_heldPieceIndex;
     INDEX m_phantomLocation, m_phantomAttack;
     std::vector<INDEX> m_validMoves;
+    INDEX m_whiteKing, m_blackKing;
 
     // Pawn promotion data
     INDEX m_promotionIndex;
@@ -33,6 +34,10 @@ private:
     
     // Stores whos turn it is to move
     int m_currentTurn, m_totalTurns, m_50moveRule;
+    // Stores if game is checkmate
+    bool m_checkmate;
+    // Stores if game is in stalemate
+    bool m_stalemate;
 
     // Stores colours for rendering values
     COLOUR m_dark, m_light;
@@ -41,6 +46,9 @@ private:
 
     // Renders promotion items to the screen
     void showPromotionOptions();
+
+    // Checks if last move is checkmate
+    void checkCheckmate(Move& move);
 
     // ----- Update -----
 
@@ -57,10 +65,10 @@ private:
     bool hold(INDEX index);
 
     // Releases the piece
-    void release(MOVE move, bool moved);
+    void release(Move move);
 
     // Deals with phantom piece
-    void managePhantom(INDEX index, PIECE piece);
+    void managePhantom(Move move);
 
 public:
     // ----- Creation -----
@@ -81,6 +89,9 @@ public:
 
     // Checks if there are any actions the board needs to take before rendering
     void check(INDEX index);
+
+    // Returns the position of a king
+    INDEX kingPos(FLAG colour);
 
     // ----- Update -----
     

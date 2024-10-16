@@ -14,7 +14,7 @@ namespace WindowManager {
     // Will automatically end program if anything goes wrong
     // Window created is automatically put into main context
     // Glad is initialized as well
-    void init();
+    void init(int winSizeParam = WINDOW_SIZE_REGULAR);
 
     // ----- Reading -----
 
@@ -26,7 +26,9 @@ namespace WindowManager {
     POINT winSize();
 
     // Swap buffers, renders the window
-    void show();
+    // Able to either have speed capped or render always
+    // Render always during actions, otherwise not necessary
+    void show(bool updateAlways = false);
 
     // Poll window events and process them
     void poll();
