@@ -69,6 +69,9 @@ void EventManager::manageKeyEvents() {
     else if (s_key == GLFW_KEY_H) {
         this->showHelp();
     }
+    else if (s_key == GLFW_KEY_P) {
+        this->m_board->changePerspective();
+    }
 }
 
 void EventManager::managePromotionEvents() {
@@ -80,6 +83,7 @@ void EventManager::showHelp() {
     std::cout << "H: Show this menu" << std::endl;
     std::cout << "R: Reset board" << std::endl;
     std::cout << "F: Enable/disable board flipping" << std::endl;
+    std::cout << "P: Change board perspective" << std::endl;
     std::cout << "`: Show FPS" << std::endl;
     std::cout << "ESC: Close program" << std::endl;
     std::cout << std::endl;

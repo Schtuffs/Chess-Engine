@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include "Library.h"
+#include "Defines.h"
 
 class Move {
 private:
@@ -14,14 +14,17 @@ public:
     Move(INDEX start = -1, INDEX target = 0, FLAG flags = 0);
 
     // Returns start index of move
-    INDEX getStart();
+    INDEX Start();
 
     // Returns target index (AKA where move is going)
-    INDEX getTarget();
+    INDEX Target();
 
     // Returns flag data
-    FLAG getFlags();
+    FLAG Flags();
+    // Returns specific flag data
+    FLAG Flags(FLAG flag);
 
+    // Adds a flag to the move
     void addFlags(FLAG flags);
 
     // Returns if this move exists or not

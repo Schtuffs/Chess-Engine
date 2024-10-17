@@ -80,6 +80,21 @@ int Library::charToInt(char c) {
 
 }
 
+GLfloat Library::map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax) {
+    value -= currentMin;
+
+    GLfloat currentRange = currentMax - currentMin;
+    if (currentRange != 0)
+        value /= currentRange;
+
+    GLfloat newRange = newMax - newMin;
+    value *= newRange;
+
+    value += newMin;
+
+    return value;
+}
+
 // Grid conversions
 
 POINT Library::physToGrid(POINT phys) {
@@ -105,35 +120,31 @@ INDEX Library::flipIndex(INDEX index) {
     // Find initial coords
     INDEX x = index % GRID_SIZE;
     INDEX y = index / GRID_SIZE;
-    // Flip y value and account for grid positioning
+    // Flip values and account for grid positioning change
     y = Library::map(y, 0, GRID_SIZE, GRID_SIZE - 1, -1);
+    x = Library::map(x, 0, GRID_SIZE, GRID_SIZE - 1, -1);
     // Repack data
     index = y * GRID_SIZE + x;
     return index;
 }
 
-
-
-GLfloat Library::map(GLfloat value, GLfloat currentMin, GLfloat currentMax, GLfloat newMin, GLfloat newMax) {
-    value -= currentMin;
-
-    GLfloat currentRange = currentMax - currentMin;
-    if (currentRange != 0)
-        value /= currentRange;
-
-    GLfloat newRange = newMax - newMin;
-    value *= newRange;
-
-    value += newMin;
-
-    return value;
-}
+// Operator overloads
 
 bool operator==(POINT &p1, POINT &p2) {
     if (p1.x != p2.x)
         return false;
     if (p1.y != p2.y)
         return false;
+    return true;
+}
+
+bool operator==(Move& m1, Move& m2) {
+    if (m1.Start() != m2.Start()) {
+        return false;
+    }
+    if (m1.Target() != m2.Target()) {
+        return false;
+    }
     return true;
 }
 

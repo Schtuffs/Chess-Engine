@@ -12,16 +12,20 @@ Move::~Move() {
 
 // Declared functions
 
-INDEX Move::getStart() {
+INDEX Move::Start() {
     return (this->m_moveData & MASK_MOVE_START);
 }
 
-INDEX Move::getTarget() {
+INDEX Move::Target() {
     return ((this->m_moveData & MASK_MOVE_TARGET) >> 6);
 }
 
-FLAG Move::getFlags() {
+FLAG Move::Flags() {
     return (this->m_moveData & MASK_MOVE_FLAGS);
+}
+
+FLAG Move::Flags(FLAG flag) {
+    return (this->m_moveData & flag);
 }
 
 void Move::addFlags(FLAG flags) {

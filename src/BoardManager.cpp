@@ -20,6 +20,7 @@ BoardManager::BoardManager(Player& white, Player& black, GLenum boardColourStyle
     this->m_heldPieceIndex = CODE_INVALID;
     this->m_promotionIndex = CODE_INVALID;
     this->m_flipBoard = flipBoard;
+    this->m_whitePerspective = true;
 }
 
 // ----- Read -----
@@ -35,19 +36,14 @@ void BoardManager::show() {
     // Render each piece
     //Render board
     for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-        // Determine if indexes need to be swapped
-        int x = i % GRID_SIZE;
-        int y = i / GRID_SIZE;
+        INDEX index = i;
         // Only flip is player is human, its blacks turn, and board should flip
-        if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_BLACK && 
-            this->m_currentPlayer->Type() == PLAYER_TYPE_HUMAN && 
-            this->m_flipBoard) {
-
-            y = Library::map(y, 0, GRID_SIZE, GRID_SIZE, 0) - 1;
+        if (!this->m_whitePerspective) {
+            index = Library::flipIndex(index);
         }
         // If there is a piece on the grid square
         if (this->m_grid[i] && !Piece::getFlag(this->m_grid[i], MASK_HELD)) {
-            this->m_renderer.render(this->m_grid[i], x, y);
+            this->m_renderer.render(this->m_grid[i], index % GRID_SIZE, index / GRID_SIZE);
         }
     }
 
@@ -79,9 +75,7 @@ void BoardManager::showBoard() {
             INDEX index = y * GRID_SIZE + x;
 
             // Flip board if specified
-            if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_BLACK && 
-                this->m_currentPlayer->Type() == PLAYER_TYPE_HUMAN && 
-                this->m_flipBoard) {
+            if (!this->m_whitePerspective) {
                 index = Library::flipIndex(index);
             }
 
@@ -96,9 +90,9 @@ void BoardManager::showBoard() {
                 }
 
                 // Check for moves and render as red
-                auto moves = this->m_moveManager.getLegalMoves();
+                auto moves = this->m_moveManager.getMoves(this->m_heldPieceIndex);
                 for (Move& move : moves) {
-                    if (index == move.getTarget()) {
+                    if (index == move.Target()) {
                         mask.r = 0.3f;
                         mask.g = -0.3f;
                         mask.b = -0.3f;
@@ -127,10 +121,8 @@ void BoardManager::ManageInput(INDEX index) {
     }
 
     // If piece is black and a human, flip inputs
-    if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_BLACK && 
-            this->m_currentPlayer->Type() == PLAYER_TYPE_HUMAN && 
-            this->m_flipBoard) {
-                index = Library::flipIndex(index);
+    if (!this->m_whitePerspective) {
+        index = Library::flipIndex(index);
     }
 
     // First, check if promotion is happening
@@ -145,13 +137,18 @@ void BoardManager::ManageInput(INDEX index) {
     // If a piece is held, try to release it
     if (this->m_heldPieceIndex != CODE_INVALID) {
         // Store piece incase of valid
-        Move move = this->m_moveManager.isLegal(index);
+        Move move(this->m_heldPieceIndex, index, 0);
+        bool isMove = this->m_moveManager.isLegal(move);
         // Only switch turn if piece was placed elsewhere
-        if (index != this->m_heldPieceIndex && move.isMove()) {
-            this->m_currentPlayer = (this->m_currentPlayer->Colour() == PLAYER_COLOUR_WHITE ? &this->m_blackPlayer : &this->m_whitePlayer);
+        if (index != this->m_heldPieceIndex && isMove) {
             this->release(move);
+            this->m_currentPlayer = (this->m_currentPlayer->Colour() == PLAYER_COLOUR_WHITE ? &this->m_blackPlayer : &this->m_whitePlayer);
+            // Allows board to flip
+            if (this->m_flipBoard) {
+                this->m_whitePerspective = (this->m_currentPlayer->Colour() == PLAYER_COLOUR_WHITE ? true : false);
+            }
         }
-        else if (move.isMove()) {
+        else if (isMove) {
             this->release(move);
         }
         return;
@@ -197,50 +194,51 @@ void BoardManager::showPromotionOptions() {
 }
 
 void BoardManager::checkCheckmate(Move& move) {
-    FLAG colour = Piece::getFlag(this->m_grid[move.getTarget()], MASK_COLOUR);
-    
-    // Check if new position checks the king
-    if (this->m_moveManager.calculateMoves(move.getTarget(), this->m_grid, false)) {
-        // Check black king
-        if (colour == PIECE_WHITE) {
+    // Calculates if move put king into check
+    this->m_moveManager.calculateMoves(this->m_currentPlayer->Colour(), this->m_grid, false);
+    auto moves = this->m_moveManager.getMoves();
+    if (moves.size() == 1 && (moves[0].Flags(MOVE_CHECK))) {
+        if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_WHITE) {
+            // Check black king if white moves
             Piece::addFlag(&this->m_grid[this->m_blackKing], MOVE_CHECK);
         }
-        // Check white king
         else {
+            // Check white king if black moved
             Piece::addFlag(&this->m_grid[this->m_whiteKing], MOVE_CHECK);
         }
     }
-
-    // Checks if there are any legal moves
-    bool legalMoveExists = false;
     
-    // Loop through each piece to determine if they can stop checkmate
-    // If not, checkmate
+    // Determine if there are any moves than can prevent checkmate
+    FLAG colour = (this->m_currentPlayer->Colour() == PLAYER_COLOUR_WHITE ? PLAYER_COLOUR_BLACK : PLAYER_COLOUR_WHITE);
+    this->m_moveManager.calculateMoves(colour, this->m_grid, true);
+    moves = this->m_moveManager.getMoves();
+    
+
+    int totalPieces = 0;
+    // Determine how many total pieces there are on the board
     for (INDEX i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-        this->m_moveManager.clear();
-        if (Piece::getFlag(this->m_grid[i], MASK_COLOUR) != colour) {
-            this->m_moveManager.calculateMoves(i, this->m_grid, true);
-            auto moves = this->m_moveManager.getLegalMoves();
-            if (moves.size() > 1) {
-                legalMoveExists = true;
-                break;
-            }
+        if (Piece::getFlag(this->m_grid[i], MASK_COLOUR) == colour) {
+            totalPieces++;
         }
     }
+    // Determine if legal moves is greater than pieces
+    if ((int)this->m_moveManager.getMoves().size() > totalPieces) {
+        // More moves than pieces, theres a legal move somewhere
+        return;
+    }
 
-    if (!legalMoveExists) {
-        // King is in check with no moves
-        if ((colour == PIECE_WHITE && Piece::getFlag(this->m_grid[this->m_blackKing], MOVE_CHECK)) ||
-            (colour == PIECE_BLACK && Piece::getFlag(this->m_grid[this->m_whiteKing], MOVE_CHECK))) {
-                // CHECKMATE
-                this->m_checkmate = true;
-                std::cout << "CHECKMATE" << std::endl;
-            }
-        else {
-            // King is not in check with no moves
-            this->m_stalemate = true;
-            std::cout << "STALEMATE" << std::endl;
-        }
+    // King is in check with no moves
+    if (Piece::getFlag(this->m_grid[this->m_blackKing], MOVE_CHECK) ||
+        Piece::getFlag(this->m_grid[this->m_whiteKing], MOVE_CHECK)) {
+            // CHECKMATE
+            this->m_checkmate = true;
+            std::cout << "CHECKMATE" << std::endl;
+    }
+    else {
+        // King is not in check with no moves
+        this->m_stalemate = true;
+        std::cout << Piece::getFlag(this->m_grid[this->m_whiteKing], MOVE_CHECK) << std::endl;;
+        std::cout << "STALEMATE" << std::endl;
     }
 }
 
@@ -424,6 +422,10 @@ void BoardManager::changeFlip() {
     this->m_flipBoard = !this->m_flipBoard;
 }
 
+void BoardManager::changePerspective() {
+    this->m_whitePerspective = !this->m_whitePerspective;
+}
+
 // ----- Update ----- Hidden -----
 
 void BoardManager::readMetadata(std::string& metadata) {
@@ -600,22 +602,35 @@ void BoardManager::hold(INDEX index) {
 
     this->m_heldPieceIndex = index;
     Piece::addFlag(&this->m_grid[m_heldPieceIndex], MASK_HELD);
-    this->m_moveManager.calculateMoves(index, this->m_grid, true);
+    this->m_moveManager.calculateMoves(this->m_currentPlayer->Colour(), this->m_grid, true);
 }
 
 void BoardManager::release(Move& move) {
     // Put held piece down on specified square
     PIECE piece = this->m_grid[this->m_heldPieceIndex];
     Piece::removeFlag(&piece, MASK_HELD);
-    this->m_grid[move.getTarget()] = piece;
+    this->m_grid[move.Target()] = piece;
     
     // Make sure not to delete piece if it was not moved
-    if (move.getStart() != move.getTarget()) {
+    if (move.Start() != move.Target()) {
         // First, unchecks kings
         Piece::removeFlag(&this->m_grid[this->m_whiteKing], MOVE_CHECK);
         Piece::removeFlag(&this->m_grid[this->m_blackKing], MOVE_CHECK);
-        this->m_grid[move.getStart()] = PIECE_INVALID;
+        this->m_grid[move.Start()] = PIECE_INVALID;
     }
+
+    // Move king position
+    if (Piece::getFlag(piece, MASK_TYPE) == PIECE_KING) {
+        if (Piece::getFlag(piece, MASK_COLOUR) == PIECE_WHITE) {
+            this->m_whiteKing = move.Target();
+        }
+        else {
+            this->m_blackKing = move.Target();
+        }
+    }
+    
+    // Deal with phantom
+    this->managePhantom(move);
 
     // Check if move put king into check
     this->checkCheckmate(move);
@@ -624,16 +639,14 @@ void BoardManager::release(Move& move) {
     this->m_heldPieceIndex = CODE_INVALID;
     this->m_moveManager.clear();
 
-    // Deal with phantom
-    this->managePhantom(move);
-
-    if (move.getStart() != move.getTarget()) {
-        Piece::removeFlags(move.getTarget(), this->m_grid);
+    if (move.Start() != move.Target()) {
+        Piece::removeFlags(move.Target(), this->m_grid);
     }
 }
 
 void BoardManager::managePhantom(Move move) {
-    INDEX target = move.getTarget();
+    INDEX target = move.Target();
+
     // Check if pawn in on phantom square
     FLAG type = Piece::getFlag(this->m_grid[target], MASK_TYPE);
     if (type == PIECE_PAWN && target == this->m_phantomLocation) {
@@ -641,18 +654,18 @@ void BoardManager::managePhantom(Move move) {
     }
     
     // Remove phantom always
-    if (0 <= this->m_phantomLocation && this->m_phantomLocation < GRID_SIZE * GRID_SIZE) {
-        if (this->m_grid[this->m_phantomLocation] == PIECE_PHANTOM){
+    if (this->m_phantomLocation != CODE_INVALID) {
+        if (this->m_grid[this->m_phantomLocation] == PIECE_PHANTOM) {
             this->m_grid[m_phantomLocation] = PIECE_INVALID;
-            this->m_phantomLocation = CODE_INVALID;
-            this->m_phantomAttack = CODE_INVALID;
         }
+        this->m_phantomLocation = CODE_INVALID;
+        this->m_phantomAttack = CODE_INVALID;
     }
 
     // Check if pawn
     if (Piece::getFlag(this->m_grid[target], MASK_TYPE) == PIECE_PAWN) {
         // Check if phantom should be created
-        FLAG moveTwo = (move.getFlags() & MOVE_PAWN_MOVE_TWO);
+        FLAG moveTwo = (move.Flags() & MOVE_PAWN_MOVE_TWO);
         if (moveTwo) {
             FLAG colour = Piece::getFlag(this->m_grid[target], MASK_COLOUR);
             // White side phantom

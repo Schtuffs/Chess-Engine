@@ -65,7 +65,7 @@ typedef short INDEX;
 #define MASK_FLAG_2             0b0010000000000000
 #define MASK_FLAG_3             0b0100000000000000
 #define MASK_FLAG_4             0b1000000000000000
-
+#define MASK_FLAG_ALL           (MASK_FLAG_1 | MASK_FLAG_2 | MASK_FLAG_3 | MASK_FLAG_4)
 
 
 
@@ -112,6 +112,4 @@ constexpr char startFEN[]   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk
 #define MOVE_KING_CASTLING      (MOVE_KING_CASTLE_KING | MOVE_KING_CASTLE_QUEEN)
 #define MOVE_ROOK_CAN_CASTLE    0b0001000000000000
 #define MOVE_CHECK              0b1000000000000000
-
- 
 

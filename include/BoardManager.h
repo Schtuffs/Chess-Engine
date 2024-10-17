@@ -43,10 +43,15 @@ private:
     // Stores colours for rendering values
     COLOUR m_dark, m_light;
 
-    // Stores players
+    // Stores board looking state
     bool m_flipBoard;
+    bool m_whitePerspective;
+
+    // Stores player info
     Player m_whitePlayer, m_blackPlayer;
     Player* m_currentPlayer;
+
+
 
     // ----- Read -----
 
@@ -113,8 +118,11 @@ public:
     // Sets an index where pawn promoted
     void setPromotion(INDEX index);
 
-    // Allows changing of board state on the fly
+    // Allows changing of board flip state on the fly
     void changeFlip();
+
+    // Allows user to force perspective change
+    void changePerspective();
 
     // ----- Destruction -----
 

@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 
 #include "Defines.h"
+#include "Move.h"
 
 typedef struct colourHolder {
     GLfloat r, g, b;
@@ -39,6 +40,7 @@ public:
 };
 
 bool operator==(POINT& p1, POINT& p2);
+bool operator==(Move&  m1, Move&  m2);
 bool operator!=(POINT& p1, POINT& p2);
 COLOUR operator+(COLOUR& c1, COLOUR& c2);
 
