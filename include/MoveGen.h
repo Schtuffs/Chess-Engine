@@ -45,7 +45,6 @@ private:
 
     // Call this function to add a move to the move list
     static FLAG add(INDEX start, INDEX target, FLAG flags, const PIECE* grid);
-    static FLAG add(Move move, const PIECE* grid);
 
     // Pawn is a special case, has its own add logic
     static FLAG addPawn(INDEX start, INDEX target, FLAG flags, const PIECE* grid);
@@ -57,6 +56,7 @@ private:
     static void addLegal(Move& move);
 
 public:
+    // Returns all legal generated moves
     // Returns a single move with check flag if king captured when not calculating legal
     static std::vector<Move> generate(FLAG colour, const PIECE* grid, bool calculateLegal);
 };

@@ -63,7 +63,7 @@ namespace {
 
     // Finally, remove all castling rights always
     Piece::removeFlag(&grid[index], MOVE_KING_CASTLE_KING);
-    Piece::removeFlag(&grid[index], MOVE_KING_CASTLE_KING);
+    Piece::removeFlag(&grid[index], MOVE_KING_CASTLE_QUEEN);
 }
 
 }

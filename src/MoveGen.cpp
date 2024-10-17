@@ -64,11 +64,6 @@ void MoveGen::calculateLegalMoves(FLAG colour, const PIECE* grid) {
 
     // Loop through each move and play it on the board
     for (Move& move : moves) {
-        // Special check for pawn moves
-        if (Piece::getFlag(editGrid[move.Start()], MASK_TYPE) == PIECE_PAWN) {
-
-        }
-        
         // Play move to determine legality
         editGrid[move.Target()] = grid[move.Start()];
         editGrid[move.Start()] = 0;
@@ -80,7 +75,7 @@ void MoveGen::calculateLegalMoves(FLAG colour, const PIECE* grid) {
             if (colour != targetColour && targetColour) {
                 auto returned = MoveGen::generate(targetColour, editGrid, false);
                 // Checks if returned object was the check
-                if (returned.size() != 1 && !(returned[0].Flags(MOVE_CHECK))) {
+                if (!(returned.size() == 1 && returned[0].Flags(MOVE_CHECK))) {
                     addLegal(move);
                 }
             }
@@ -134,7 +129,7 @@ bool MoveGen::calculateKingMoves(INDEX startIndex, const PIECE* grid) {
     }
 
     // Prevent castling moves from being calculated in check
-    if (!Piece::getFlag(grid[startIndex], MOVE_CHECK)) {
+    if (Piece::getFlag(grid[startIndex], MOVE_CHECK) != MOVE_CHECK) {
         calculateKingCastling(startIndex, grid);
     }
 
@@ -281,10 +276,10 @@ bool MoveGen::calculateKnightMoves(INDEX startIndex, const PIECE* grid) {
         (INDEX)(startIndex + (2 * GRID_SIZE) + 1),
         (INDEX)(startIndex + (2) + GRID_SIZE),
         (INDEX)(startIndex + (2) - GRID_SIZE),
-        (INDEX)(startIndex - (2 * GRID_SIZE) - 1),
         (INDEX)(startIndex - (2 * GRID_SIZE) + 1),
-        (INDEX)(startIndex - (2) + GRID_SIZE),
-        (INDEX)(startIndex - (2) - GRID_SIZE)
+        (INDEX)(startIndex - (2 * GRID_SIZE) - 1),
+        (INDEX)(startIndex - (2) - GRID_SIZE),
+        (INDEX)(startIndex - (2) + GRID_SIZE)
     };
 
     bool preChecks[] = {
@@ -292,8 +287,8 @@ bool MoveGen::calculateKnightMoves(INDEX startIndex, const PIECE* grid) {
         startIndex % GRID_SIZE != GRID_SIZE - 1,
         startIndex % GRID_SIZE < GRID_SIZE - 2,
         startIndex % GRID_SIZE < GRID_SIZE - 2,
-        startIndex % GRID_SIZE != 0,
         startIndex % GRID_SIZE != GRID_SIZE - 1,
+        startIndex % GRID_SIZE != 0,
         startIndex % GRID_SIZE > 1,
         startIndex % GRID_SIZE > 1
     };
@@ -348,6 +343,12 @@ bool MoveGen::calculatePawnMoves(INDEX startIndex, const PIECE* grid) {
 }
 
 bool MoveGen::calculatePawnAttackMoves(INDEX start, const PIECE* grid) {
+    // Type must be pawn
+    FLAG type = Piece::getFlag(grid[start], MASK_TYPE);
+    if (type != PIECE_PAWN) {
+        return MOVE_KING_NOT_CAPTURED;
+    }
+
     FLAG colour = Piece::getFlag(grid[start], MASK_COLOUR);
     INDEX indexCheck = (colour == PIECE_WHITE ? GRID_SIZE : (-GRID_SIZE));
 
@@ -370,10 +371,6 @@ bool MoveGen::calculatePawnAttackMoves(INDEX start, const PIECE* grid) {
 }
 
 // ----- Move ----- List ----- Functions -----
-
-FLAG MoveGen::add(Move move, const PIECE* grid) {
-    return MoveGen::add(move.Start(), move.Target(), move.Flags(), grid);
-}
 
 FLAG MoveGen::add(INDEX start, INDEX target, FLAG flags, const PIECE* grid) {
     // Ensure index is valid

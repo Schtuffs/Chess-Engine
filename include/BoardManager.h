@@ -16,6 +16,7 @@ private:
 
     // Calculates moves
     MoveManager m_moveManager;
+    bool m_calculated;
 
     // Reset FEN
     std::string m_resetFEN;

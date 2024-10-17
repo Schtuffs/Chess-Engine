@@ -21,6 +21,7 @@ BoardManager::BoardManager(Player& white, Player& black, GLenum boardColourStyle
     this->m_promotionIndex = CODE_INVALID;
     this->m_flipBoard = flipBoard;
     this->m_whitePerspective = true;
+    this->m_calculated = false;
 }
 
 // ----- Read -----
@@ -195,9 +196,10 @@ void BoardManager::showPromotionOptions() {
 
 void BoardManager::checkCheckmate(Move& move) {
     // Calculates if move put king into check
+    this->m_moveManager.clear();
     this->m_moveManager.calculateMoves(this->m_currentPlayer->Colour(), this->m_grid, false);
     auto moves = this->m_moveManager.getMoves();
-    if (moves.size() == 1 && (moves[0].Flags(MOVE_CHECK))) {
+    if (moves.size() == 1 && (moves[0].Flags(MOVE_CHECK) == MOVE_CHECK)) {
         if (this->m_currentPlayer->Colour() == PLAYER_COLOUR_WHITE) {
             // Check black king if white moves
             Piece::addFlag(&this->m_grid[this->m_blackKing], MOVE_CHECK);
@@ -602,7 +604,10 @@ void BoardManager::hold(INDEX index) {
 
     this->m_heldPieceIndex = index;
     Piece::addFlag(&this->m_grid[m_heldPieceIndex], MASK_HELD);
-    this->m_moveManager.calculateMoves(this->m_currentPlayer->Colour(), this->m_grid, true);
+    if (!this->m_calculated) {
+        this->m_moveManager.calculateMoves(this->m_currentPlayer->Colour(), this->m_grid, true);
+        this->m_calculated = true;
+    }
 }
 
 void BoardManager::release(Move& move) {
@@ -633,11 +638,16 @@ void BoardManager::release(Move& move) {
     this->managePhantom(move);
 
     // Check if move put king into check
-    this->checkCheckmate(move);
+    if (move.Start() != move.Target()) {
+        this->checkCheckmate(move);
+    }
     
     // Clear old data
     this->m_heldPieceIndex = CODE_INVALID;
-    this->m_moveManager.clear();
+    if (move.Start() != move.Target()) {
+        this->m_moveManager.clear();
+        this->m_calculated = false;
+    }
 
     if (move.Start() != move.Target()) {
         Piece::removeFlags(move.Target(), this->m_grid);

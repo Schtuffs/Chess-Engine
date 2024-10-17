@@ -55,7 +55,7 @@ FpsTracker.o: $(SRC)/FpsTracker.cpp $(INCLUDE)/FpsTracker.h
 
 Player.o: $(SRC)/Player.cpp $(INCLUDE)/Player.h
 	$(CXX) $(CXXFLAGS) $<
-
+	
 Piece.o: $(SRC)/Piece.cpp $(INCLUDE)/Piece.h
 	$(CXX) $(CXXFLAGS) $<
 
