@@ -34,3 +34,5 @@
 # Other
 .vscode
 .removed
+build
+winbuild
