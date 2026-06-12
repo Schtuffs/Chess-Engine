@@ -19,9 +19,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 add_executable(ChessEngine
-    ${SRC}/Constants.cpp
     ${SRC}/main.cpp
     ${SRC}/Piece.cpp
+    ${SRC}/Renderer.cpp
     ${SRC}/Utils.cpp
 )
 

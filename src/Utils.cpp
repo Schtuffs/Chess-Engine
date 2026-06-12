@@ -9,11 +9,19 @@ typedef struct TextureValuePair {
 
 static TextureValuePair textureValuePairs[12];
 
-int CalculateIndex(Enums::Colour colour, Enums::Type type) {
+int CalculateIndex(Enums::Colour colour, Enums::Type type)
+{
     return type * 2 + colour;
 }
 
-Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type) {
+Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type, int size)
+{
+    // Check size
+    if (size < 1) {
+        TraceLog(LOG_ERROR, "Utils::LoadTexture received invalid size: %d", size);
+        return Texture2D{};
+    }
+    
     // Get pair data
     int index = CalculateIndex(colour, type);
     TextureValuePair& pair = textureValuePairs[index];
@@ -21,7 +29,7 @@ Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type) {
     // Determine if should load texture
     if (pair.count == 0) {
         // Load and check image
-        char path[40];
+        char path[50];
         snprintf(path, sizeof(path), "%s/%s_%s.png", PATH_PIECES, Enums::ToString::Type[type], Enums::ToString::Colour[colour]);
         Image image = LoadImage(path);
         if (!IsImageValid(image)) {
@@ -30,7 +38,7 @@ Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type) {
         }
         
         // Change image size and load to texture
-        ImageResizeNN(&image, Dimensions::TILE_SIZE, Dimensions::TILE_SIZE);
+        ImageResizeNN(&image, size, size);
         Texture2D texture = LoadTextureFromImage(image);
         if (!IsTextureValid(texture)) {
             TraceLog(LOG_ERROR, "Utils::LoadTexture Failed to convert image to texture.");
@@ -39,7 +47,7 @@ Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type) {
 
         pair.texture = texture;
         UnloadImage(image);
-        // SetTextureFilter(pair.texture, TEXTURE_FILTER_POINT);
+        SetTextureFilter(pair.texture, TEXTURE_FILTER_POINT);
     }
 
     // Account and return
@@ -47,7 +55,8 @@ Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type) {
     return pair.texture;
 }
 
-void Utils::UnloadTexture(Texture2D& texture, Enums::Colour colour, Enums::Type type) {
+void Utils::UnloadTexture(Texture2D& texture, Enums::Colour colour, Enums::Type type)
+{
     if (IsTextureValid(texture)) {
         ::UnloadTexture(texture);
         texture.id = 0;

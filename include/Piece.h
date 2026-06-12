@@ -29,13 +29,9 @@ public:
      */
     ~Piece();
 
-    // Temporary stub method
-    void Render(int x, int y);
-
 private:
     Enums::Colour m_colour; 
     Enums::Type m_type;
-    Texture2D m_texture;
     bool m_isSetup;
 };
 

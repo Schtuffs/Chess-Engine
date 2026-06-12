@@ -1,6 +1,29 @@
 #pragma once
 
-#include <cstdint>
+/**
+ * @brief Helpful for holding 2 variables of the same type in 1.
+ * @tparam T The desired datatype.
+ * @author Kyle Wagler
+ * @date 2026-06-11
+ */
+template <typename T>
+struct Vec2 {
+    T x, y;
+};
+
+/**
+ * @brief Default fen string.
+ * @author Kyle Wagler
+ * @date 2026-06-11
+ */
+constexpr const char* DEFAULT_FEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+/**
+ * @brief Grid size in files and ranks.
+ * @author Kyle Wagler
+ * @date 2026-06-11
+ */
+constexpr int GRID_SIZE             = 8;
 
 /**
  * @brief Resource path for piece textures.
@@ -8,45 +31,6 @@
  * @date 2026-06-08
  */
 constexpr const char* PATH_PIECES   = "../resources/pieces";
-
-/**
- * @brief Holds different dimensions. To be improved later.
- * @namespace Dimensions
- * @author Kyle Wagler
- * @date 2026-06-08
- */
-namespace Dimensions {
-    /**
-     * @brief Holds tile square size.
-     * @author Kyle Wagler
-     * @date 2026-06-08
-     */
-    extern uint64_t TILE_SIZE;
-
-    /**
-     * @brief Holds screen width.
-     * @author Kyle Wagler
-     * @date 2026-06-08
-     */
-    extern uint64_t SCREEN_WIDTH;
-
-    /**
-     * @brief Holds screen height.
-     * @author Kyle Wagler
-     * @date 2026-06-08
-     */
-    extern uint64_t SCREEN_HEIGHT;
-}
-
-/**
- * @brief Holds board information. Will be moved to class later.
- * @namespace Board
- * @author Kyle Wagler
- * @date 2026-06-08
- */
-namespace Board {
-    
-}
 
 /**
  * @brief Holds global enums.
@@ -62,12 +46,12 @@ namespace Enums {
      * @date 2026-06-08
      */
     enum Type {
-        Bishop,
-        King,
-        Knight,
-        Pawn,
-        Queen,
-        Rook,
+        Bishop, /**< Bishop type */
+        King,   /**< King type */
+        Knight, /**< Knight type */
+        Pawn,   /**< Pawn type */
+        Queen,  /**< Queen type */
+        Rook,   /**< Rook type */
     };
 
     /**
@@ -77,8 +61,8 @@ namespace Enums {
      * @date 2026-06-08
      */
     enum Colour {
-        Black,
-        White,
+        Black,  /**< Piece colour black */
+        White,  /**< Piece colour white */
     };
 
     /**

@@ -45,7 +45,7 @@ namespace Utils {
      * @author Kyle Wagler
      * @date 2026-06-06
      */
-    Texture2D LoadTexture(Enums::Colour colour, Enums::Type type);
+    Texture2D LoadTexture(Enums::Colour colour, Enums::Type type, int size);
     
     /**
      * @brief Unloads a `Texture2D` from the GPU.
