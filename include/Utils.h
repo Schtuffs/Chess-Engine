@@ -38,6 +38,16 @@ namespace Utils {
     }
     
     /**
+     * @brief Centers given text.
+     * @param text The text to center.
+     * @param font The text `Font`.
+     * @return The position to draw the text at for it to be centered.
+     * @author Kyle Wagler
+     * @date 2026-06-15
+     */
+    Vector2 CenterText(const char* text, Font font, int fontSize, Vector2 centerPoint);
+    
+    /**
      * @brief Loads a `Texture2D` to the GPU.
      * @param `Enums::Colour` The `Piece` colour.
      * @param `Enums::Type` The `Piece` type.

@@ -51,6 +51,8 @@ Renderer::~Renderer()
 
 void Renderer::RenderBoard(Color dark, Color light)
 {
+    FixSize();
+    
     for (uint64_t i = 0; i < GRID_SIZE; i++) {
         for (uint64_t j = 0; j < GRID_SIZE; j++) {
             Color colour = dark;
@@ -65,6 +67,8 @@ void Renderer::RenderBoard(Color dark, Color light)
 
 void Renderer::RenderPieces(std::string_view fen, bool isWhitePerspective)
 {
+    FixSize();
+    
     // Prepares to render top to bottom or bottom to top
     int rank, rankInc, file = 0;
     if (isWhitePerspective) {
@@ -153,5 +157,27 @@ void Renderer::RenderPiece(Texture2D texture, Vec2<int> pos)
     if (IsTextureValid(texture)) {
         DrawTexture(texture, pos.x, pos.y, WHITE);
     }
+}
+
+
+
+// ----- Update ----- Hidden -----
+
+void Renderer::FixSize()
+{
+    if (!IsWindowResized()) {
+        return;
+    }
+
+    // Make texture size square
+    int width = GetScreenWidth();
+    int height = GetScreenHeight();
+    m_textureSize = Utils::min(width, height) / GRID_SIZE;
+
+    // Calculate start position
+    uint32_t sizeX  = width  - m_textureSize * GRID_SIZE;
+    uint32_t sizeY  = height - m_textureSize * GRID_SIZE;
+    m_startX = sizeX / 2;
+    m_startY = sizeY / 2;
 }
 

@@ -16,7 +16,7 @@
 class Renderer {
 public:
 
-    // ----- Creation ----- Destruction -----
+    // ----- Creation / Destruction -----
 
     /**
      * @brief Loads `Texture2D` from resources.
@@ -74,10 +74,16 @@ private:
     int CheckType(char cur);
     
     /**
+     * @brief Fixes window size.
+     * @author Kyle Wagler
+     * @date 2026-06-15
+     */
+    void FixSize();
+    
+    /**
      * @brief Renders a piece to the board.
      * @param texture The `Texture2D` to render.
      * @param pos The `Vec2` position of the piece.
-     * @return 
      * @author Kyle Wagler
      * @date 2026-06-11
      */

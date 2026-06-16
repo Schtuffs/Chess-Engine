@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 project(ChessEngine C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
-# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(INCLUDE ${CMAKE_CURRENT_LIST_DIR}/include)
@@ -18,7 +18,9 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(raylib)
 
-add_executable(ChessEngine
+add_executable(${PROJECT_NAME}
+    ${SRC}/Board.cpp
+    ${SRC}/Button.cpp
     ${SRC}/main.cpp
     ${SRC}/Piece.cpp
     ${SRC}/Renderer.cpp

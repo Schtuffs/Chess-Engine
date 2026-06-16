@@ -13,6 +13,8 @@
  */
 class Piece {
 public:
+    // ----- Creation / Destruction -----
+    
     /**
      * @brief Creates a piece with a given type and colour.
      * @param `Colour` The `Colour` of the piece.

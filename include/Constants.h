@@ -40,6 +40,31 @@ constexpr const char* PATH_PIECES   = "../resources/pieces";
  */
 namespace Enums {
     /**
+     * @brief Holds information for the colour of the piece.
+     * @enum Colour
+     * @author Kyle Wagler
+     * @date 2026-06-08
+     */
+    enum Colour {
+        Black,  /**< Piece colour black */
+        White,  /**< Piece colour white */
+    };
+    
+    /**
+     * @brief Screen state information.
+     * @enum Screen
+     * @author Kyle Wagler
+     * @date 2026-06-08
+     */
+    enum Screen {
+        Menu,           /**< Main menu screen */
+        NewGame,        /**< New game options screen */
+        Multiplayer,    /**< Setup multiplayer screen */
+        Game,           /**< Playing a game screen */
+        Settings,       /**< Settings screen */
+    };
+    
+    /**
      * @brief Holds information for the type of piece.
      * @enum Type
      * @author Kyle Wagler
@@ -53,18 +78,7 @@ namespace Enums {
         Queen,  /**< Queen type */
         Rook,   /**< Rook type */
     };
-
-    /**
-     * @brief Holds information for the colour of the piece.
-     * @enum Colour
-     * @author Kyle Wagler
-     * @date 2026-06-08
-     */
-    enum Colour {
-        Black,  /**< Piece colour black */
-        White,  /**< Piece colour white */
-    };
-
+    
     /**
      * @brief Convert an enum variable to a string via indexing with enum value.
      * @namespace ToString

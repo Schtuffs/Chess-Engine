@@ -14,6 +14,15 @@ int CalculateIndex(Enums::Colour colour, Enums::Type type)
     return type * 2 + colour;
 }
 
+Vector2 Utils::CenterText(const char* text, Font font, int fontSize, Vector2 centerPoint)
+{
+    Vector2 textSize = MeasureTextEx(font, text, fontSize, 1.f);
+    centerPoint.x = centerPoint.x - (textSize.x / 2);
+    centerPoint.y = centerPoint.y - (textSize.y / 2);
+
+    return centerPoint;
+}
+
 Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type, int size)
 {
     // Check size
