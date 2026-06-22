@@ -1,5 +1,17 @@
 #pragma once
 
+#include <cstdint>
+#include <string_view>
+
+using i8    =  int8_t;
+using u8    = uint8_t;
+using i16   =  int16_t;
+using u16   = uint16_t;
+using i32   =  int32_t;
+using u32   = uint32_t;
+using i64   =  int64_t;
+using u64   = uint64_t;
+
 /**
  * @brief Helpful for holding 2 variables of the same type in 1.
  * @tparam T The desired datatype.
@@ -16,21 +28,21 @@ struct Vec2 {
  * @author Kyle Wagler
  * @date 2026-06-11
  */
-constexpr const char* DEFAULT_FEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+constexpr std::string_view DEFAULT_FEN  = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 /**
  * @brief Grid size in files and ranks.
  * @author Kyle Wagler
  * @date 2026-06-11
  */
-constexpr int GRID_SIZE             = 8;
+constexpr int GRID_SIZE = 8;
 
 /**
  * @brief Resource path for piece textures.
  * @author Kyle Wagler
  * @date 2026-06-08
  */
-constexpr const char* PATH_PIECES   = "../resources/pieces";
+constexpr std::string_view PATH_PIECES = "../resources/pieces";
 
 /**
  * @brief Holds global enums.
@@ -106,4 +118,18 @@ namespace Enums {
         };
     }
 }
+
+/**
+ * @brief The major version of the engine.
+ * @author Kyle Wagler
+ * @date 2026-06-20
+ */
+constexpr std::string_view VERSION_MAJOR = "1";
+
+/**
+ * @brief The minor version of the engine.
+ * @author Kyle Wagler
+ * @date 2026-06-20
+ */
+constexpr std::string_view VERSION_MINOR = "0";
 

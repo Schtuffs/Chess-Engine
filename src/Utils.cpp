@@ -1,75 +1,55 @@
 #include "Utils.h"
 
 #include <cstdio>
+#include <mutex>
+#include <print>
 
-typedef struct TextureValuePair {
-    char count = 0;
-    Texture2D texture {};
-} TextureValuePair;
+static std::mutex mtxPrint, mtxDebug, mtxError, mtxInfo, mtxWarning;
 
-static TextureValuePair textureValuePairs[12];
-
-int CalculateIndex(Enums::Colour colour, Enums::Type type)
+void Utils::Detail::LockPrint(Utils::Detail::FileType ft)
 {
-    return type * 2 + colour;
-}
-
-Vector2 Utils::CenterText(const char* text, Font font, int fontSize, Vector2 centerPoint)
-{
-    Vector2 textSize = MeasureTextEx(font, text, fontSize, 1.f);
-    centerPoint.x = centerPoint.x - (textSize.x / 2);
-    centerPoint.y = centerPoint.y - (textSize.y / 2);
-
-    return centerPoint;
-}
-
-Texture2D Utils::LoadTexture(Enums::Colour colour, Enums::Type type, int size)
-{
-    // Check size
-    if (size < 1) {
-        TraceLog(LOG_ERROR, "Utils::LoadTexture received invalid size: %d", size);
-        return Texture2D{};
+    switch (ft) {
+    case Utils::Detail::FileType::DEBUG:
+        mtxDebug.lock();
+        break;
+    case Utils::Detail::FileType::ERROR:
+        mtxError.lock();
+        break;
+    case Utils::Detail::FileType::INFO:
+        mtxInfo.lock();
+        break;
+    case Utils::Detail::FileType::PRINT:
+        mtxPrint.lock();
+        break;
+    case Utils::Detail::FileType::WARNING:
+        mtxWarning.lock();
+        break;
+    default:
+        ErrorPrintln("Invalid filetype lock: {}", (int)ft);
+        break;
     }
-    
-    // Get pair data
-    int index = CalculateIndex(colour, type);
-    TextureValuePair& pair = textureValuePairs[index];
-
-    // Determine if should load texture
-    if (pair.count == 0) {
-        // Load and check image
-        char path[50];
-        snprintf(path, sizeof(path), "%s/%s_%s.png", PATH_PIECES, Enums::ToString::Type[type], Enums::ToString::Colour[colour]);
-        Image image = LoadImage(path);
-        if (!IsImageValid(image)) {
-            TraceLog(LOG_ERROR, "Utils::LoadTexture Failed to load image.");
-            return Texture2D{};
-        }
-        
-        // Change image size and load to texture
-        ImageResizeNN(&image, size, size);
-        Texture2D texture = LoadTextureFromImage(image);
-        if (!IsTextureValid(texture)) {
-            TraceLog(LOG_ERROR, "Utils::LoadTexture Failed to convert image to texture.");
-            return Texture2D{};
-        }
-
-        pair.texture = texture;
-        UnloadImage(image);
-        SetTextureFilter(pair.texture, TEXTURE_FILTER_POINT);
-    }
-
-    // Account and return
-    pair.count++;
-    return pair.texture;
 }
-
-void Utils::UnloadTexture(Texture2D& texture, Enums::Colour colour, Enums::Type type)
+void Utils::Detail::UnlockPrint(Utils::Detail::FileType ft)
 {
-    if (IsTextureValid(texture)) {
-        ::UnloadTexture(texture);
-        texture.id = 0;
-        textureValuePairs[CalculateIndex(colour, type)].count--;
+    switch (ft) {
+    case Utils::Detail::FileType::DEBUG:
+        mtxDebug.unlock();
+        break;
+    case Utils::Detail::FileType::ERROR:
+        mtxError.unlock();
+        break;
+    case Utils::Detail::FileType::INFO:
+        mtxInfo.unlock();
+        break;
+    case Utils::Detail::FileType::PRINT:
+        mtxPrint.unlock();
+        break;
+    case Utils::Detail::FileType::WARNING:
+        mtxWarning.unlock();
+        break;
+    default:
+        ErrorPrintln("Invalid filetype unlock: {}", (int)ft);
+        break;
     }
 }
 

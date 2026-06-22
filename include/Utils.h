@@ -1,6 +1,6 @@
 #pragma once
 
-#include "raylib.h"
+#include <cstdio>
 
 #include "Constants.h"
 
@@ -20,7 +20,7 @@ namespace Utils {
      * @date 2026-06-06
      */
     template <typename T>
-    T min(T a, T b) {
+    T Min(T a, T b) {
         return (b < a) ? b : a;
     }
     
@@ -33,38 +33,65 @@ namespace Utils {
      * @date 2026-06-06
      */
     template <typename T>
-    T max(T a, T b) {
+    T Max(T a, T b) {
         return (b > a) ? b : a;
     }
     
     /**
-     * @brief Centers given text.
-     * @param text The text to center.
-     * @param font The text `Font`.
-     * @return The position to draw the text at for it to be centered.
+     * @brief Don't touch this.
      * @author Kyle Wagler
-     * @date 2026-06-15
+     * @date 2026-06-21
      */
-    Vector2 CenterText(const char* text, Font font, int fontSize, Vector2 centerPoint);
+    namespace Detail {
+#ifdef FILES_ALL_CONSOLE
+        inline FILE* debugFile      = stdout;
+        inline FILE* errorFile      = stdout;
+        inline FILE* infoFile       = stdout;
+        inline FILE* warningFile    = stdout;
+#else
+        inline FILE* debugFile      = fopen("debug.log", "a");
+        inline FILE* errorFile      = fopen("error.log", "a");
+        inline FILE* infoFile       = fopen("info.log", "a");
+        inline FILE* warningFile    = fopen("warning.log", "a");
+#endif
+
+        /**
+         * @brief Specify the file to lock.
+         * @author Kyle Wagler
+         * @date 2026-06-21
+         */
+        enum class FileType {
+            DEBUG,      /**< Debug file. */
+            ERROR,      /**< Error file. */
+            INFO,       /**< Info file. */
+            PRINT,      /**< Print to console. */
+            WARNING,    /**< Warning file. */
+        };
     
-    /**
-     * @brief Loads a `Texture2D` to the GPU.
-     * @param `Enums::Colour` The `Piece` colour.
-     * @param `Enums::Type` The `Piece` type.
-     * @return The loaded `Texture2D`. Check with `IsTextureValid(Texture2D)`.
-     * @author Kyle Wagler
-     * @date 2026-06-06
-     */
-    Texture2D LoadTexture(Enums::Colour colour, Enums::Type type, int size);
+        /**
+         * @brief Locks printing to prevent races.
+         * @author Kyle Wagler
+         * @date 2026-06-20
+         */
+        void LockPrint(Utils::Detail::FileType ft);
     
-    /**
-     * @brief Unloads a `Texture2D` from the GPU.
-     * @param `Texture2D` The texture to unload.
-     * @param `Enums::Colour` The `Piece` colour.
-     * @param `Enums::Type` The `Piece` type.
-     * @author Kyle Wagler
-     * @date 2026-06-06
-     */
-    void UnloadTexture(Texture2D& texture, Enums::Colour colour, Enums::Type type);
+        /**
+         * @brief Unlocks printing to allow another thread to print.
+         * @author Kyle Wagler
+         * @date 2026-06-20
+         */
+        void UnlockPrint(Utils::Detail::FileType ft);
+    }
+
+    #define FilePrintln(whichType, whichFile, initialMessage, ...) Utils::Detail::LockPrint(whichType); \
+        std::print(whichFile, initialMessage); \
+        std::println(whichFile, __VA_ARGS__); \
+        Utils::Detail::UnlockPrint(whichType)
+    
+    #define    SyncPrintln(...) FilePrintln(Utils::Detail::FileType::PRINT,     stdout,                     "",             __VA_ARGS__)
+    #define   DebugPrintln(...) FilePrintln(Utils::Detail::FileType::DEBUG,     Utils::Detail::debugFile,   "DEBUG:   ",    __VA_ARGS__)
+    #define   ErrorPrintln(...) FilePrintln(Utils::Detail::FileType::ERROR,     Utils::Detail::errorFile,   "ERROR:   ",    __VA_ARGS__)
+    #define    InfoPrintln(...) FilePrintln(Utils::Detail::FileType::INFO,      Utils::Detail::infoFile,    "INFO:    ",    __VA_ARGS__)
+    #define WarningPrintln(...) FilePrintln(Utils::Detail::FileType::WARNING,   Utils::Detail::warningFile, "WARNING: ",    __VA_ARGS__)
 }
 
