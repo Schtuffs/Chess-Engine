@@ -1,55 +1,77 @@
 #include "Utils.h"
 
+#include <atomic>
 #include <cstdio>
 #include <mutex>
 #include <print>
 
 static std::mutex mtxPrint, mtxDebug, mtxError, mtxInfo, mtxWarning;
+static std::atomic<Utils::LogLevel> s_logLevel = Utils::LogLevel::DEBUG;
 
-void Utils::Detail::LockPrint(Utils::Detail::FileType ft)
+bool Utils::Detail::LockPrint(Utils::LogLevel ll)
 {
-    switch (ft) {
-    case Utils::Detail::FileType::DEBUG:
-        mtxDebug.lock();
-        break;
-    case Utils::Detail::FileType::ERROR:
-        mtxError.lock();
-        break;
-    case Utils::Detail::FileType::INFO:
-        mtxInfo.lock();
-        break;
-    case Utils::Detail::FileType::PRINT:
-        mtxPrint.lock();
-        break;
-    case Utils::Detail::FileType::WARNING:
-        mtxWarning.lock();
-        break;
-    default:
-        ErrorPrintln("Invalid filetype lock: {}", (int)ft);
-        break;
+    if (ll < s_logLevel) {
+        return false;
     }
+
+#ifdef FILES_ALL_CONSOLE
+    mtxPrint.lock();
+    return true;
+#else
+    switch (ll) {
+    case Utils::LogLevel::INFO:
+        mtxInfo.lock();
+        return true;
+    case Utils::LogLevel::DEBUG:
+        mtxDebug.lock();
+        return true;
+    case Utils::LogLevel::WARNING:
+        mtxWarning.lock();
+        return true;
+    case Utils::LogLevel::ERROR:
+        mtxError.lock();
+        return true;
+    case Utils::LogLevel::PRINT:
+        mtxPrint.lock();
+        return true;
+    default:
+        ErrorPrintln("Invalid filetype lock: {}", (int)ll);
+        return false;
+    }
+#endif
 }
-void Utils::Detail::UnlockPrint(Utils::Detail::FileType ft)
+
+void Utils::Detail::UnlockPrint(Utils::LogLevel ll)
 {
-    switch (ft) {
-    case Utils::Detail::FileType::DEBUG:
+#ifdef FILES_ALL_CONSOLE
+    (void)ll;
+    mtxPrint.unlock();
+#else
+    switch (ll) {
+    case Utils::LogLevel::DEBUG:
         mtxDebug.unlock();
         break;
-    case Utils::Detail::FileType::ERROR:
+    case Utils::LogLevel::ERROR:
         mtxError.unlock();
         break;
-    case Utils::Detail::FileType::INFO:
+    case Utils::LogLevel::INFO:
         mtxInfo.unlock();
         break;
-    case Utils::Detail::FileType::PRINT:
+    case Utils::LogLevel::PRINT:
         mtxPrint.unlock();
         break;
-    case Utils::Detail::FileType::WARNING:
+    case Utils::LogLevel::WARNING:
         mtxWarning.unlock();
         break;
     default:
-        ErrorPrintln("Invalid filetype unlock: {}", (int)ft);
+        ErrorPrintln("Invalid filetype unlock: {}", (int)ll);
         break;
     }
+#endif
+}
+
+void Utils::SetLogLevel(Utils::LogLevel ll)
+{
+    s_logLevel = ll;
 }
 

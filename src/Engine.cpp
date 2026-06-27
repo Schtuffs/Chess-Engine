@@ -1,8 +1,9 @@
 #include "Engine.h"
 
+#include <cstdlib>
+#include <charconv>
 #include <print>
 
-#include "Constants.h"
 #include "Utils.h"
 
 
@@ -11,7 +12,7 @@
 
 Engine::Engine()
   : m_name("EngineOfRunning"), m_author("Schtuffs"),
-    m_fen(DEFAULT_FEN), m_isWhite(true)
+    m_fen(DEFAULT_FEN), m_isWhite(true), m_halfMoves(0)
 {}
 
 Engine::~Engine()
@@ -34,7 +35,20 @@ std::string Engine::Author()
 // Hidden
 
 /**
- * Validates piece data in given fen string
+ * Moves string_view forward to space.
+ */
+bool MoveToSpace(std::string_view& view)
+{
+    size_t index = view.find(' ');
+    if (index == std::string_view::npos || index + 1 >= view.length()) {
+        return false;
+    }
+    view = view.substr(index + 1);
+    return true;
+}
+
+/**
+ * Validates piece data in given fen string.
  */
 bool ValidatePieces(std::string_view fen)
 {
@@ -160,6 +174,10 @@ bool ValidateEnPassant(std::string_view fen)
         WarningPrintln("Invalid file in fen: {}", c);
         return false;
     }
+
+    if (fen.length() < 2) {
+        return false;
+    }
     
     c = fen[1];
     if (c != '3' && c != '6') {
@@ -179,34 +197,72 @@ bool ValidFen(std::string_view fen)
         return false;
     }
 
-    size_t index = fen.find(' ');
-    if (index == std::string_view::npos || index + 1 >= fen.length()) {
+    if (!MoveToSpace(fen)) {
         return false;
     }
-    fen = fen.substr(index + 1);
 
     if (!ValidateMove(fen)) {
         return false;
     }
-    fen = fen.substr(2);
 
-    index = fen.find(' ');
-    if (
-        index == std::string_view::npos ||
-        index + 1 >= fen.length() ||
-        !ValidateCastling(fen)
-    ) {
+    if (!MoveToSpace(fen)) {
         return false;
     }
-    fen = fen.substr(fen.find(' ') + 1);
+
+    if (!ValidateCastling(fen)) {
+        return false;
+    }
+
+    if (!MoveToSpace(fen)) {
+        return false;
+    }
 
     if (!ValidateEnPassant(fen)) {
         return false;
     }
-    fen = fen.substr(2);
-    
-    DebugPrintln("Fen: {}", fen);
 
+    return true;
+}
+
+/**
+ * Parses all fen data.
+ */
+bool ParseFen(std::string_view fen, u16& m_halfMoves)
+{
+    size_t index = ValidFen(fen);
+    if (!index) {
+        ErrorPrintln("Failed to parse fen: {}", fen);
+        return false;
+    }
+
+    for (u8 i = 0; i < 4; i++) {
+        if (!MoveToSpace(fen)) {
+            ErrorPrintln("Fen does not contain half or full move data.");
+            return false;
+        }
+    }
+
+    index = fen.find(' ');
+    if (index == std::string_view::npos) {
+        DebugPrintln("No half-move data in fen.");
+        return false;
+    }
+    std::string_view halfMoves = fen.substr(0, index);
+    
+    std::from_chars_result res = std::from_chars(halfMoves.data(), halfMoves.end(), m_halfMoves);
+    if (res.ec != std::errc()) {
+        ErrorPrintln("Invalid half-moves in fen.");
+        return false;
+    }
+    halfMoves = halfMoves.substr(index);
+    
+    res = std::from_chars(halfMoves.data(), halfMoves.end(), m_halfMoves);
+    if (res.ec != std::errc()) {
+        ErrorPrintln("Invalid full-moves in fen.");
+        return false;
+    }
+
+    DebugPrintln("Successfully parsed fen.");
     return true;
 }
 
@@ -226,14 +282,12 @@ void Engine::Ready()
 
 bool Engine::SetState(std::string_view data)
 {
-    size_t index = data.find(' ');
-    if (index == std::string_view::npos) {
+    if (!MoveToSpace(data)) {
         ErrorPrintln("Failed to receive postion data: {}", data);
         return false;
     }
-    data = data.substr(index + 1);
     
-    index = data.find("moves") - 1;
+    size_t index = data.find("moves") - 1;
     if (index == std::string_view::npos - 1) {
         DebugPrintln("No moves data in fen: {}", data);
         index = data.length();
@@ -243,12 +297,11 @@ bool Engine::SetState(std::string_view data)
     if (fen == "startpos") {
         fen = DEFAULT_FEN;
     }
-    DebugPrintln("Fen: {}", fen);
 
-    if (!ValidFen(fen)) {
-        ErrorPrintln("Failed to parse fen: {}", fen);
+    if (!ParseFen(fen, m_halfMoves)) {
         return false;
     }
+
 
     return true;
 }

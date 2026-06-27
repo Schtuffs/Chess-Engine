@@ -1,5 +1,6 @@
 #include "UCI.h"
 
+#include <charconv>
 #include <iostream>
 #include <print>
 #include <sstream>
@@ -39,6 +40,7 @@ void UCI::Loop()
 
         token.clear();
         ss >> token;
+        DebugPrintln("Token: {}", token);
 
         // UCI commands
         
@@ -51,11 +53,12 @@ void UCI::Loop()
         }
 
         else if (token == "ucinewgame") {
-            m_engine.SetState(DEFAULT_FEN);
+            m_engine.SetState(std::string(" ") + DEFAULT_FEN.data());
         }
 
         else if (token == "isready") {
             m_engine.Ready();
+            SyncPrintln("readyok");
         }
 
         else if (token == "setoption") {
@@ -79,6 +82,27 @@ void UCI::Loop()
 
         else if (token == "flip" || token == "0000") {
             m_engine.Flip();
+        }
+
+        else if (token == "loglevel") {
+            ss >> token;
+            size_t i = 0, max = sizeof(Enums::ToString::LogLevel) / sizeof(Enums::ToString::LogLevel[0]);
+            while (i < max) {
+                if (token == Enums::ToString::LogLevel[i]) {
+                    Utils::SetLogLevel((static_cast<Utils::LogLevel>(i)));
+                    DebugPrintln("Setting log level to: {}", token);
+                    break;
+                }
+                i++;
+            }
+
+            if (i == max) {
+                ErrorPrintln("Failed to receive valid log level: {}", token);
+            }
+        }
+
+        else {
+            ErrorPrintln("Unknown command: {}", token);
         }
 
     } while (token != "quit");

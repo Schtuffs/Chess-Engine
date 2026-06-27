@@ -116,6 +116,19 @@ namespace Enums {
         constexpr const char* Colour[] = {
             "black", "white",
         };
+    
+        /**
+         * @brief Convert `Enums::Colour` to string.
+         * @author Kyle Wagler
+         * @date 2026-06-08
+         */
+        constexpr const char* LogLevel[] = {
+            "Info",
+            "Debug",
+            "Warning",
+            "Error",
+            "None",
+        };
     }
 }
 

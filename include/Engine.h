@@ -3,6 +3,8 @@
 #include <string>
 #include <string_view>
 
+#include "Constants.h"
+
 /**
  * @brief The main calculation engine.
  * @class Engine
@@ -83,5 +85,6 @@ private:
     std::string m_name, m_author, m_fen;
     bool m_isWhite;
     bool m_toggles;
+    u16 m_halfMoves;
 };
 
