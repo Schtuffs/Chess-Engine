@@ -3,9 +3,23 @@
 #include <atomic>
 #include <cstdio>
 #include <mutex>
-#include <print>
 
-static std::mutex mtxPrint, mtxDebug, mtxError, mtxInfo, mtxWarning;
+bool Utils::IsValidIndex(Index index) { return (index < 64); }
+
+Enums::Colour Utils::SwapColour(Enums::Colour colour)
+{
+    if (colour == Enums::Colour::White) {
+        return Enums::Colour::Black;
+    }
+
+    if (colour == Enums::Colour::Black) {
+        return Enums::Colour::White;
+    }
+
+    return colour;
+}
+
+static std::mutex                   mtxPrint, mtxDebug, mtxError, mtxInfo, mtxWarning;
 static std::atomic<Utils::LogLevel> s_logLevel = Utils::LogLevel::DEBUG;
 
 bool Utils::Detail::LockPrint(Utils::LogLevel ll)
@@ -70,8 +84,4 @@ void Utils::Detail::UnlockPrint(Utils::LogLevel ll)
 #endif
 }
 
-void Utils::SetLogLevel(Utils::LogLevel ll)
-{
-    s_logLevel = ll;
-}
-
+void Utils::SetLogLevel(Utils::LogLevel ll) { s_logLevel = ll; }

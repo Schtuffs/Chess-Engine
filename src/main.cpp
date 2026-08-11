@@ -38,14 +38,16 @@ Extra:
 #include "UCI.h"
 #include "Utils.h"
 
-void PrintEngineVersion() {
+void PrintEngineVersion()
+{
     constexpr std::string_view months("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
 
     std::string       month, day, year;
     std::stringstream date(__DATE__);
 
     date >> month >> day >> year;
-    SyncPrintln("Chess Engine {}.{} - {:04}-{:02}-{:02}", VERSION_MAJOR, VERSION_MINOR, std::stoi(year), (months.find(month) / 4 + 1), std::stoi(day));
+    SyncPrintln("Chess Engine {}.{} - {:04}-{:02}-{:02}", VERSION_MAJOR, VERSION_MINOR,
+                std::stoi(year), (months.find(month) / 4 + 1), std::stoi(day));
 }
 
 int main(int argc, char** argv)
@@ -57,4 +59,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-

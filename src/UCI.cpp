@@ -19,11 +19,7 @@ UCI::~UCI()
     // Nothing todo
 }
 
-
-
 // ----- Read -----
-
-
 
 // ----- Update -----
 
@@ -43,7 +39,7 @@ void UCI::Loop()
         DebugPrintln("Token: {}", token);
 
         // UCI commands
-        
+
         if (token == "quit") {
             m_engine.Stop();
         }
@@ -69,6 +65,7 @@ void UCI::Loop()
         }
 
         else if (token == "go") {
+
         }
 
         else if (token == "stop") {
@@ -80,13 +77,19 @@ void UCI::Loop()
 
         // Custom commands
 
+        else if (token == "d") {
+            std::string state = m_engine.GetState();
+            SyncPrintln("{}", state);
+        }
+
         else if (token == "flip" || token == "0000") {
             m_engine.Flip();
         }
 
         else if (token == "loglevel") {
             ss >> token;
-            size_t i = 0, max = sizeof(Enums::ToString::LogLevel) / sizeof(Enums::ToString::LogLevel[0]);
+            size_t i   = 0,
+                   max = sizeof(Enums::ToString::LogLevel) / sizeof(Enums::ToString::LogLevel[0]);
             while (i < max) {
                 if (token == Enums::ToString::LogLevel[i]) {
                     Utils::SetLogLevel((static_cast<Utils::LogLevel>(i)));
@@ -107,4 +110,3 @@ void UCI::Loop()
 
     } while (token != "quit");
 }
-
