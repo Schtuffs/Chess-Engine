@@ -1,5 +1,7 @@
 #include "Board.h"
 
+#include <format>
+
 #include "Convert.h"
 #include "Fen.h"
 #include "Utils.h"
@@ -88,6 +90,23 @@ u8 Board::Castling() const noexcept { return m_castling; }
 std::span<const Piece, 64> Board::Pieces() const noexcept { return m_pieces; }
 
 std::string_view Board::Fen() const noexcept { return m_fen; }
+
+std::string Board::ToString() const noexcept
+{
+    std::string state = Convert::FenToString(m_fen);
+
+    if (m_playerColour == Enums::Colour::White) {
+        state += " Player: White";
+    } else {
+        state += " Player: Black";
+    }
+
+    state += ", Full: " + std::format("{:2d}", 0);
+    state += ", Half: " + std::format("{:2d}", 0);
+
+    state += '\n';
+    return state;
+}
 
 // ----- Update -----
 

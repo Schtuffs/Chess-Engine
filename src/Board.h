@@ -33,6 +33,9 @@ public:
     // Get the board's piece list.
     std::span<const Piece, 64> Pieces() const noexcept;
 
+    // Gets printable version of `Board`.
+    std::string ToString() const noexcept;
+
     // ----- Update -----
 
     // Try to play given move (long algebraic notation).

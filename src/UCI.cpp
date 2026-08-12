@@ -65,7 +65,7 @@ void UCI::Loop()
         }
 
         else if (token == "go") {
-
+            m_engine.Search(ss.str());
         }
 
         else if (token == "stop") {
