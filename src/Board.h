@@ -27,11 +27,17 @@ public:
     // Get board castling rights
     u8 Castling() const noexcept;
 
+    // Check if board can make a given move.
+    bool CanMakeMove(std::string_view move) const noexcept;
+
     // Get current gamestate fen.
     std::string_view Fen() const noexcept;
 
     // Get the board's piece list.
     std::span<const Piece, 64> Pieces() const noexcept;
+
+    // Get the board's player colour.
+    Enums::Colour Player() const noexcept;
 
     // Gets printable version of `Board`.
     std::string ToString() const noexcept;
@@ -50,7 +56,7 @@ private:
 
     // ----- Update -----
 
-    bool ValidateMove(std::string_view move);
+    bool ValidateMove(std::string_view move) const noexcept;
     bool ValidatePromotion(std::string_view move);
     void MovePiece(std::string_view move);
     void MoveEnPassant(std::string_view move);

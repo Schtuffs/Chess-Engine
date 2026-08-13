@@ -186,13 +186,13 @@ typedef struct MagicTable {
     MagicStruct bishopMagic[64];
     MagicStruct rookMagic[64];
 
-    Bitboard bishopAttacks[5248];
-    Bitboard rookAttacks[102400];
+    BitBoard bishopAttacks[5248];
+    BitBoard rookAttacks[102400];
 } MagicTable;
 
 typedef struct KingTable {
-    Bitboard bishop[896]; // Max is 14 when in center, 64 * 14
-    Bitboard rook[896];   // 64 * 14 (its always 14 for rooks)
+    BitBoard bishop[896]; // Max is 14 when in center, 64 * 14
+    BitBoard rook[896];   // 64 * 14 (its always 14 for rooks)
 } KingTable;
 
 consteval MagicTable CreateMagicTable()
@@ -293,9 +293,9 @@ static constexpr u64 BishopTableHash(Index bishop, Index king)
     return (hash + (king * 14));
 }
 
-static constexpr Bitboard CalculateBishopAttacks(Index bishop, Index king)
+static constexpr BitBoard CalculateBishopAttacks(Index bishop, Index king)
 {
-    Bitboard bb = 0;
+    BitBoard bb = 0;
 
     i32 kf = king % 8;
     i32 kr = king / 8;
@@ -319,7 +319,7 @@ static constexpr Bitboard CalculateBishopAttacks(Index bishop, Index king)
 
     Index end = std::abs(kf - bf);
     for (Index i = 0; i < end; i++) {
-        bb |= Convert::IndexToBitboard((offset * i) + bishop);
+        bb |= Convert::IndexToBitBoard((offset * i) + bishop);
     }
 
     return bb;
@@ -381,9 +381,9 @@ static constexpr u64 RookTableHash(Index rook, Index king)
     return ((king * 14) + hash);
 }
 
-static constexpr Bitboard CalculateRookAttacks(Index rook, Index king)
+static constexpr BitBoard CalculateRookAttacks(Index rook, Index king)
 {
-    Bitboard bb = 0;
+    BitBoard bb = 0;
 
     // Horizontal
     if ((rook / 8) == (king / 8)) {
@@ -391,7 +391,7 @@ static constexpr Bitboard CalculateRookAttacks(Index rook, Index king)
         Index end   = Utils::Max(rook, king);
 
         for (Index i = start; i < end; i++) {
-            bb |= Convert::IndexToBitboard(i);
+            bb |= Convert::IndexToBitBoard(i);
         }
     }
     // Vertical
@@ -400,7 +400,7 @@ static constexpr Bitboard CalculateRookAttacks(Index rook, Index king)
         Index end   = Utils::Max(rook, king);
 
         for (Index i = start; i < end; i += 8) {
-            bb |= Convert::IndexToBitboard(i);
+            bb |= Convert::IndexToBitBoard(i);
         }
     }
 
@@ -446,7 +446,7 @@ inline constexpr KingTable kingAttacks = CreateKingTable();
 // ----- Secrets -----
 
 #ifndef SHUSH
-static constexpr Bitboard GetBishopAttacks(Index index, Bitboard blockers)
+static constexpr BitBoard GetBishopAttacks(Index index, BitBoard blockers)
 {
     blockers &= magics.bishopMagic[index].mask;
     u32 hash = (blockers * magics.bishopMagic[index].magic) >> magics.bishopMagic[index].shift;
@@ -455,7 +455,7 @@ static constexpr Bitboard GetBishopAttacks(Index index, Bitboard blockers)
 
 static_assert(GetBishopAttacks(54, 0x58'd8'00'00'00'00'ef'ff) == 0xa0'00'a0'10'08'04'02'00);
 
-static constexpr Bitboard GetRookAttacks(Index index, Bitboard blockers)
+static constexpr BitBoard GetRookAttacks(Index index, BitBoard blockers)
 {
     blockers &= magics.rookMagic[index].mask;
     u32 hash = (blockers * magics.rookMagic[index].magic) >> magics.rookMagic[index].shift;
@@ -463,7 +463,7 @@ static constexpr Bitboard GetRookAttacks(Index index, Bitboard blockers)
 }
 #endif
 
-static constexpr Bitboard GetBishopKingAttacks(Index bishop, Index king)
+static constexpr BitBoard GetBishopKingAttacks(Index bishop, Index king)
 {
     u64 hash = BishopTableHash(bishop, king);
     if (hash == INVALID_HASH) {
@@ -472,7 +472,7 @@ static constexpr Bitboard GetBishopKingAttacks(Index bishop, Index king)
     return kingAttacks.bishop[hash];
 }
 
-static constexpr Bitboard GetRookKingAttacks(Index rook, Index king)
+static constexpr BitBoard GetRookKingAttacks(Index rook, Index king)
 {
     u64 hash = RookTableHash(rook, king);
     if (hash == INVALID_HASH) {
@@ -484,12 +484,12 @@ static constexpr Bitboard GetRookKingAttacks(Index rook, Index king)
 // ----- Public Functions -----
 
 #ifndef SHUSH
-Bitboard Magic::GetSlidingAttacks(Index index, Bitboard blockers, bool isRook)
+BitBoard Magic::GetSlidingAttacks(Index index, BitBoard blockers, bool isRook)
 {
     return (isRook ? GetRookAttacks(index, blockers) : GetBishopAttacks(index, blockers));
 }
 #else
-Bitboard Magic::GetSlidingAttacks(Index index, Bitboard blockers, bool isRook)
+BitBoard Magic::GetSlidingAttacks(Index index, BitBoard blockers, bool isRook)
 {
     (void)index;
     (void)blockers;
@@ -498,7 +498,7 @@ Bitboard Magic::GetSlidingAttacks(Index index, Bitboard blockers, bool isRook)
 }
 #endif
 
-Bitboard Magic::GetKingAttacks(Index piece, Index king, bool isRook)
+BitBoard Magic::GetKingAttacks(Index piece, Index king, bool isRook)
 {
     return (isRook ? GetRookKingAttacks(piece, king) : GetBishopKingAttacks(piece, king));
 }

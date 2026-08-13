@@ -64,14 +64,14 @@ std::string Convert::FenToString(std::string_view fen)
     return ret;
 }
 
-std::string Convert::BitboardToString(Bitboard val, char on, char off)
+std::string Convert::BitBoardToString(BitBoard val, char on, char off)
 {
     const std::string VERT_SPACE = "\n +---+---+---+---+---+---+---+---+\n";
     const std::string HORZ_SPACE = " | ";
     std::string       ret = "\n", line = HORZ_SPACE;
 
     for (int i = 0; i < 64; i++) {
-        if ((val & ((Bitboard)1 << i)) > 0) {
+        if ((val & ((BitBoard)1 << i)) > 0) {
             line += on + HORZ_SPACE;
         } else {
             line += off + HORZ_SPACE;

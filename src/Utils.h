@@ -66,16 +66,16 @@ Enums::Colour SwapColour(Enums::Colour colour);
  * @date 2026-06-21
  */
 namespace Detail {
-#ifdef FILES_ALL_CONSOLE
-inline FILE* debugFile   = stdout;
-inline FILE* errorFile   = stdout;
-inline FILE* infoFile    = stdout;
-inline FILE* warningFile = stdout;
-#else
+#if not defined(FILES_ALL_CONSOLE) || defined(NDEBUG)
 inline FILE* debugFile   = fopen("debug.log", "a");
 inline FILE* errorFile   = fopen("error.log", "a");
 inline FILE* infoFile    = fopen("info.log", "a");
 inline FILE* warningFile = fopen("warning.log", "a");
+#else
+inline FILE* debugFile   = stdout;
+inline FILE* errorFile   = stdout;
+inline FILE* infoFile    = stdout;
+inline FILE* warningFile = stdout;
 #endif
 
 /**

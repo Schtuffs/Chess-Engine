@@ -10,7 +10,7 @@
 class MoveGen {
 public:
     // Useful for determining if generated moves are invalid.
-    static constexpr Bitboard INVALID = 0x00'00'00'00'00'00'00'00;
+    static constexpr BitBoard INVALID = 0x00'00'00'00'00'00'00'00;
 
     // ----- Creation / Destruction -----
 
@@ -19,7 +19,7 @@ public:
 
     // ----- Read -----
 
-    Bitboard GetMoves(Index index) const noexcept;
+    BitBoard GetMoves(Index index) const noexcept;
     bool     IsCheckmate() const noexcept;
     bool     IsStalemate() const noexcept;
 
@@ -35,30 +35,30 @@ private:
     // Calculated items
     bool                     m_generatingAttacks;
     bool                     m_inCheck, m_inDoubleCheck;
-    Bitboard                 m_friendly, m_enemies, m_occupied;
-    Bitboard                 m_bishops, m_kings, m_knights, m_pawns, m_queens, m_rooks, m_enPassant;
-    Bitboard                 m_attacks, m_kingAttacks;
-    std::array<Bitboard, 64> m_pins, m_pseudoLegal;
+    BitBoard                 m_friendly, m_enemies, m_occupied;
+    BitBoard                 m_bishops, m_kings, m_knights, m_pawns, m_queens, m_rooks, m_enPassant;
+    BitBoard                 m_attacks, m_kingAttacks;
+    std::array<BitBoard, 64> m_pins, m_pseudoLegal;
 
     // Output items
     bool                     m_hasGenerated;
-    std::array<Bitboard, 64> m_legal;
-    Bitboard                 m_totalLegal;
+    std::array<BitBoard, 64> m_legal;
+    BitBoard                 m_totalLegal;
 
     void Reset();
     void SetupPieceBoards();
 
-    Bitboard GenMoves(const Piece& piece) const noexcept;
-    Bitboard GenBishop(const Piece& piece) const noexcept;
-    Bitboard GenCastling(const Piece& piece) const noexcept;
-    Bitboard GenKing(const Piece& piece) const noexcept;
-    Bitboard GenKnight(const Piece& piece) const noexcept;
-    Bitboard GenPawn(const Piece& piece) const noexcept;
-    Bitboard GenQueen(const Piece& piece) const noexcept;
-    Bitboard GenRook(const Piece& piece) const noexcept;
+    BitBoard GenMoves(const Piece& piece) const noexcept;
+    BitBoard GenBishop(const Piece& piece) const noexcept;
+    BitBoard GenCastling(const Piece& piece) const noexcept;
+    BitBoard GenKing(const Piece& piece) const noexcept;
+    BitBoard GenKnight(const Piece& piece) const noexcept;
+    BitBoard GenPawn(const Piece& piece) const noexcept;
+    BitBoard GenQueen(const Piece& piece) const noexcept;
+    BitBoard GenRook(const Piece& piece) const noexcept;
 
     void GenAttacks();
-    void AddAttacks(const Piece& piece, Index king, Bitboard moves);
+    void AddAttacks(const Piece& piece, Index king, BitBoard moves);
     void AddCheck();
 
     void GenPseudoLegal();

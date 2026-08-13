@@ -47,11 +47,11 @@ static bool ValidatePieces(std::string_view fen)
             // No last rank pawns
             if (c == 'p') {
                 if (ranks == 7) {
-                    std::println("Bad");
+                    return false;
                 }
             } else if (c == 'P') {
                 if (ranks == 0) {
-                    std::println("Bad");
+                    return false;
                 }
             }
             files++;

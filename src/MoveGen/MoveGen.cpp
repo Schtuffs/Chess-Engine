@@ -13,7 +13,7 @@ MoveGen::MoveGen() : m_hasGenerated(false) {}
 
 // ----- Read -----
 
-Bitboard MoveGen::GetMoves(Index index) const noexcept
+BitBoard MoveGen::GetMoves(Index index) const noexcept
 {
     if (!Utils::IsValidIndex(index)) {
         return MoveGen::INVALID;
@@ -94,43 +94,43 @@ void MoveGen::SetupPieceBoards()
     for (const auto& piece : pieces) {
         switch (piece.Type()) {
         case Enums::Type::Bishop:
-            m_bishops |= Convert::IndexToBitboard(piece.Position());
+            m_bishops |= Convert::IndexToBitBoard(piece.Position());
             break;
         case Enums::Type::King:
-            m_kings |= Convert::IndexToBitboard(piece.Position());
+            m_kings |= Convert::IndexToBitBoard(piece.Position());
             break;
         case Enums::Type::Knight:
-            m_knights |= Convert::IndexToBitboard(piece.Position());
+            m_knights |= Convert::IndexToBitBoard(piece.Position());
             break;
         case Enums::Type::Pawn:
-            m_pawns |= Convert::IndexToBitboard(piece.Position());
+            m_pawns |= Convert::IndexToBitBoard(piece.Position());
             break;
         case Enums::Type::Queen:
-            m_queens |= Convert::IndexToBitboard(piece.Position());
+            m_queens |= Convert::IndexToBitBoard(piece.Position());
             break;
         case Enums::Type::Rook:
-            m_rooks |= Convert::IndexToBitboard(piece.Position());
+            m_rooks |= Convert::IndexToBitBoard(piece.Position());
             break;
         default:
             if (piece.IsEnPassant()) {
-                m_enPassant |= Convert::IndexToBitboard(piece.Position());
+                m_enPassant |= Convert::IndexToBitBoard(piece.Position());
             }
             break;
         }
 
         if (piece.Colour() == m_genColour) {
-            m_friendly |= Convert::IndexToBitboard(piece.Position());
+            m_friendly |= Convert::IndexToBitBoard(piece.Position());
         } else if (piece.Colour() == Utils::SwapColour(m_genColour)) {
-            m_enemies |= Convert::IndexToBitboard(piece.Position());
+            m_enemies |= Convert::IndexToBitBoard(piece.Position());
         }
     }
 }
 
 // ----- Generation -----
 
-Bitboard MoveGen::GenMoves(const Piece& piece) const noexcept
+BitBoard MoveGen::GenMoves(const Piece& piece) const noexcept
 {
-    Bitboard bb = 0;
+    BitBoard bb = 0;
     if (piece.Type() == Enums::Type::King) {
         bb |= GenKing(piece);
     }
@@ -164,29 +164,29 @@ Bitboard MoveGen::GenMoves(const Piece& piece) const noexcept
     return bb;
 }
 
-Bitboard MoveGen::GenBishop(const Piece& piece) const noexcept
+BitBoard MoveGen::GenBishop(const Piece& piece) const noexcept
 {
-    Bitboard bb = 0;
+    BitBoard bb = 0;
 
     bb |= Magic::GetSlidingAttacks(piece.Position(), m_friendly | m_enemies, false);
 
     return bb;
 }
 
-Bitboard MoveGen::GenCastling(const Piece& piece) const noexcept
+BitBoard MoveGen::GenCastling(const Piece& piece) const noexcept
 {
     Index king     = piece.Position();
     u8    castling = m_board->Castling();
 
-    Bitboard bb = 0;
-    if (Convert::IndexToBitboard(king) & m_attacks) {
+    BitBoard bb = 0;
+    if (Convert::IndexToBitBoard(king) & m_attacks) {
         return bb;
     }
 
     // Kingside
-    Bitboard kMv1 = Convert::IndexToBitboard(king + 1);
-    Bitboard kMv2 = Convert::IndexToBitboard(king + 2);
-    Bitboard kMv  = kMv1 | kMv2;
+    BitBoard kMv1 = Convert::IndexToBitBoard(king + 1);
+    BitBoard kMv2 = Convert::IndexToBitBoard(king + 2);
+    BitBoard kMv  = kMv1 | kMv2;
 
     // Has castling rights
     if (castling & ((u8)Enums::Castling::White_King | (u8)Enums::Castling::Black_King)) {
@@ -194,15 +194,15 @@ Bitboard MoveGen::GenCastling(const Piece& piece) const noexcept
         if ((m_attacks & kMv) == 0) {
             // No pieces allowed
             if ((kMv & (m_friendly | m_enemies)) == 0) {
-                bb |= Convert::IndexToBitboard(king + 2);
+                bb |= Convert::IndexToBitBoard(king + 2);
             }
         }
     }
 
     // Queenside
-    Bitboard qMv1 = Convert::IndexToBitboard(king - 1);
-    Bitboard qMv2 = Convert::IndexToBitboard(king - 2);
-    Bitboard qMv  = qMv1 | qMv2;
+    BitBoard qMv1 = Convert::IndexToBitBoard(king - 1);
+    BitBoard qMv2 = Convert::IndexToBitBoard(king - 2);
+    BitBoard qMv  = qMv1 | qMv2;
 
     // Has castling rights
     if (castling & ((u8)Enums::Castling::White_Queen | (u8)Enums::Castling::Black_Queen)) {
@@ -210,7 +210,7 @@ Bitboard MoveGen::GenCastling(const Piece& piece) const noexcept
         if ((m_attacks & qMv) == 0) {
             // No pieces allowed
             if ((qMv & (m_friendly | m_enemies)) == 0) {
-                bb |= Convert::IndexToBitboard(king - 2);
+                bb |= Convert::IndexToBitBoard(king - 2);
             }
         }
     }
@@ -218,11 +218,11 @@ Bitboard MoveGen::GenCastling(const Piece& piece) const noexcept
     return bb;
 }
 
-Bitboard MoveGen::GenKing(const Piece& piece) const noexcept
+BitBoard MoveGen::GenKing(const Piece& piece) const noexcept
 {
-    constexpr Bitboard offsets = 0x00'00'00'00'00'07'05'07;
+    constexpr BitBoard offsets = 0x00'00'00'00'00'07'05'07;
     constexpr Index    start   = 9;
-    Bitboard           bb      = 0;
+    BitBoard           bb      = 0;
 
     // Main moves
     i8 index = (i8)piece.Position() - (i8)start;
@@ -252,11 +252,11 @@ Bitboard MoveGen::GenKing(const Piece& piece) const noexcept
     return bb;
 }
 
-Bitboard MoveGen::GenKnight(const Piece& piece) const noexcept
+BitBoard MoveGen::GenKnight(const Piece& piece) const noexcept
 {
-    constexpr Bitboard offsets = 0x00'00'00'0a'11'00'11'0a;
+    constexpr BitBoard offsets = 0x00'00'00'0a'11'00'11'0a;
     constexpr Index    start   = 18;
-    Bitboard           bb      = 0;
+    BitBoard           bb      = 0;
 
     i8 index = (i8)piece.Position() - (i8)start;
     if (index > 0) {
@@ -275,9 +275,9 @@ Bitboard MoveGen::GenKnight(const Piece& piece) const noexcept
     return bb;
 }
 
-Bitboard MoveGen::GenQueen(const Piece& piece) const noexcept
+BitBoard MoveGen::GenQueen(const Piece& piece) const noexcept
 {
-    Bitboard bb = 0;
+    BitBoard bb = 0;
 
     bb |= GenBishop(piece);
     bb |= GenRook(piece);
@@ -285,12 +285,12 @@ Bitboard MoveGen::GenQueen(const Piece& piece) const noexcept
     return bb;
 }
 
-Bitboard MoveGen::GenPawn(const Piece& piece) const noexcept
+BitBoard MoveGen::GenPawn(const Piece& piece) const noexcept
 {
-    Bitboard bb   = 0;
-    Bitboard m1   = 0;
-    Bitboard m2   = 0;
-    Bitboard pos  = Convert::IndexToBitboard(piece.Position());
+    BitBoard bb   = 0;
+    BitBoard m1   = 0;
+    BitBoard m2   = 0;
+    BitBoard pos  = Convert::IndexToBitBoard(piece.Position());
     Index    file = piece.Position() % 8;
 
     // Moves
@@ -342,9 +342,9 @@ Bitboard MoveGen::GenPawn(const Piece& piece) const noexcept
     return bb;
 }
 
-Bitboard MoveGen::GenRook(const Piece& piece) const noexcept
+BitBoard MoveGen::GenRook(const Piece& piece) const noexcept
 {
-    Bitboard bb = 0;
+    BitBoard bb = 0;
 
     bb |= Magic::GetSlidingAttacks(piece.Position(), m_friendly | m_enemies, true);
 
@@ -353,7 +353,7 @@ Bitboard MoveGen::GenRook(const Piece& piece) const noexcept
 
 // ----- Attacks -----
 
-void MoveGen::AddAttacks(const Piece& piece, Index king, Bitboard moves)
+void MoveGen::AddAttacks(const Piece& piece, Index king, BitBoard moves)
 {
     switch (piece.Type()) {
     case Enums::Type::Bishop:
@@ -378,7 +378,7 @@ void MoveGen::AddAttacks(const Piece& piece, Index king, Bitboard moves)
         m_kingAttacks |= moves;
         break;
     }
-    m_kingAttacks |= Convert::IndexToBitboard(piece.Position());
+    m_kingAttacks |= Convert::IndexToBitBoard(piece.Position());
 }
 
 void MoveGen::AddCheck()
@@ -399,10 +399,10 @@ void MoveGen::GenAttacks()
     Enums::Colour enemy  = Utils::SwapColour(m_genColour);
 
     // Find king
-    Bitboard kingBB  = m_kings & m_friendly;
+    BitBoard kingBB  = m_kings & m_friendly;
     Index    kingPos = 64;
     if (kingBB) {
-        kingPos = Convert::BitboardToIndex(kingBB);
+        kingPos = Convert::BitBoardToIndex(kingBB);
     }
 
     // Gen pins
@@ -414,7 +414,7 @@ void MoveGen::GenAttacks()
         // Loop rays
         for (Index off = 0; off < 8; off++) {
             i8       offset = offsets[off];
-            Bitboard pins   = 0;
+            BitBoard pins   = 0;
             Index    pinPos;
             bool     isPinning = false;
 
@@ -441,7 +441,7 @@ void MoveGen::GenAttacks()
                     lastCheck = true;
                 }
 
-                Bitboard bb = Convert::IndexToBitboard(sq);
+                BitBoard bb = Convert::IndexToBitBoard(sq);
                 pins |= bb;
 
                 // Friendly (them), try to pin
@@ -485,7 +485,7 @@ void MoveGen::GenAttacks()
             continue;
         }
 
-        Bitboard moves = GenMoves(piece);
+        BitBoard moves = GenMoves(piece);
         // If king, check if attack
         if (moves & kingBB) {
             AddAttacks(piece, kingPos, moves);
@@ -509,7 +509,7 @@ void MoveGen::GenPseudoLegal()
         }
 
         // Get moves and remove the friendly squares
-        Bitboard moves = GenMoves(piece);
+        BitBoard moves = GenMoves(piece);
         moves &= ~(m_friendly);
         m_pseudoLegal[i] = moves;
     }
@@ -524,7 +524,11 @@ void MoveGen::GenLegal()
             continue;
         }
 
-        Bitboard bb = m_pseudoLegal[i];
+        if (piece.Colour() != m_genColour) {
+            continue;
+        }
+
+        BitBoard bb = m_pseudoLegal[i];
 
         // Add check requirements
         if (piece.Type() != Enums::Type::King) {
@@ -540,7 +544,7 @@ void MoveGen::GenLegal()
 
         // Add moves
         m_totalLegal |= bb;
-        bb |= Convert::IndexToBitboard(piece.Position());
+        bb |= Convert::IndexToBitBoard(piece.Position());
         m_legal[i] = bb;
     }
 }

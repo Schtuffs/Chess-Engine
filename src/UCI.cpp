@@ -6,25 +6,16 @@
 #include <sstream>
 #include <string>
 
+#include "Engine.h"
 #include "Utils.h"
-
-UCI::UCI(int argc, char** argv)
-{
-    (void)argc;
-    (void)argv;
-}
-
-UCI::~UCI()
-{
-    // Nothing todo
-}
-
-// ----- Read -----
 
 // ----- Update -----
 
-void UCI::Loop()
+void UCI::Loop(int argc, char** argv)
 {
+    (void)argc;
+    (void)argv;
+
     std::string cmd, token;
 
     do {
@@ -41,19 +32,19 @@ void UCI::Loop()
         // UCI commands
 
         if (token == "quit") {
-            m_engine.Stop();
+            Engine::Stop();
         }
 
         else if (token == "uci") {
-            SyncPrintln("id name {}\nid author {}\nuciok", m_engine.Name(), m_engine.Author());
+            SyncPrintln("id name {}\nid author {}\nuciok", Engine::Name(), Engine::Author());
         }
 
         else if (token == "ucinewgame") {
-            m_engine.SetState(std::string(" ") + DEFAULT_FEN.data());
+            Engine::SetState(std::string(" ") + DEFAULT_FEN.data());
         }
 
         else if (token == "isready") {
-            m_engine.Ready();
+            Engine::Ready();
             SyncPrintln("readyok");
         }
 
@@ -61,15 +52,15 @@ void UCI::Loop()
         }
 
         else if (token == "position") {
-            m_engine.SetState(ss.str());
+            Engine::SetState(ss.str());
         }
 
         else if (token == "go") {
-            m_engine.Search(ss.str());
+            Engine::Search(ss.str());
         }
 
         else if (token == "stop") {
-            m_engine.Stop();
+            Engine::Stop();
         }
 
         else if (token == "ponderhit") {
@@ -78,12 +69,12 @@ void UCI::Loop()
         // Custom commands
 
         else if (token == "d") {
-            std::string state = m_engine.GetState();
+            std::string state = Engine::GetState();
             SyncPrintln("{}", state);
         }
 
         else if (token == "flip" || token == "0000") {
-            m_engine.Flip();
+            Engine::Flip();
         }
 
         else if (token == "loglevel") {

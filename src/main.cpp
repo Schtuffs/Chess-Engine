@@ -54,8 +54,7 @@ int main(int argc, char** argv)
 {
     PrintEngineVersion();
 
-    UCI uci(argc, argv);
-    uci.Loop();
+    UCI::Loop(argc, argv);
 
     return 0;
 }

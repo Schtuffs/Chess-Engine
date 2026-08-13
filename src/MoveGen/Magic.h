@@ -3,6 +3,6 @@
 #include "Constants.h"
 
 namespace Magic {
-Bitboard GetKingAttacks(Index index, Index king, bool isRook);
-Bitboard GetSlidingAttacks(Index index, Bitboard blockers, bool isRook);
+BitBoard GetKingAttacks(Index index, Index king, bool isRook);
+BitBoard GetSlidingAttacks(Index index, BitBoard blockers, bool isRook);
 } // namespace Magic

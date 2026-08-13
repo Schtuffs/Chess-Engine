@@ -87,7 +87,21 @@ Board::~Board() {}
 
 u8 Board::Castling() const noexcept { return m_castling; }
 
+bool Board::CanMakeMove(std::string_view move) const noexcept
+{
+    // Validate input
+    move = Convert::CastleToMove(move, m_playerColour);
+    if (move.length() < 4) {
+        return false;
+    }
+
+    // Attempt to play the move
+    return ValidateMove(move);
+}
+
 std::span<const Piece, 64> Board::Pieces() const noexcept { return m_pieces; }
+
+Enums::Colour Board::Player() const noexcept { return m_playerColour; }
 
 std::string_view Board::Fen() const noexcept { return m_fen; }
 
@@ -124,6 +138,11 @@ bool Board::MakeMove(std::string_view move)
         return false;
     }
 
+    // Check the promotion
+    if (!ValidatePromotion(move)) {
+        return false;
+    }
+
     // Perform specific piece based functions
     MoveEnPassant(move);
     MoveCastling(move);
@@ -146,7 +165,7 @@ bool Board::MakeMove(std::string_view move)
 
 // ----- Update ----- Hidden -----
 
-bool Board::ValidateMove(std::string_view move)
+bool Board::ValidateMove(std::string_view move) const noexcept
 {
     Index start = Convert::MoveToIndex(move);
     Index end   = Convert::MoveToIndex(move.substr(2));
@@ -169,12 +188,6 @@ bool Board::ValidateMove(std::string_view move)
         WarningPrintln("Board::ValidateMove: Invalid piece selected at start position: {}",
                        piece.ToString());
         return false;
-    }
-
-    if (piece.Type() == Enums::Type::Pawn) {
-        if (!ValidatePromotion(move)) {
-            return false;
-        }
     }
 
     return true;
@@ -225,7 +238,7 @@ bool Board::ValidatePromotion(std::string_view move)
         WarningPrintln("Board::ValidatePromotion: Invalid promotion type: {}", promo);
         return false;
     }
-    
+
     return true;
 }
 

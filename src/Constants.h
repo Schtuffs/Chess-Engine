@@ -12,7 +12,7 @@ using u32      = uint32_t;
 using i64      = int64_t;
 using u64      = uint64_t;
 using Index    = u8;
-using Bitboard = u64;
+using BitBoard = u64;
 
 /**
  * @brief Default fen string.

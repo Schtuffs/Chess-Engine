@@ -37,20 +37,20 @@ constexpr Enums::Type CharToType(char c)
 }
 
 /**
- * @brief Changes a `Bitboard` to an `Index`.
- * @param bb The `Bitboard` to convert.
+ * @brief Changes a `BitBoard` to an `Index`.
+ * @param bb The `BitBoard` to convert.
  * @return The `Index`. Ex: 0x00'00'00'00'00'00'10'00 -> 12.
  * @date 2026-07-07
  */
-constexpr Index BitboardToIndex(Bitboard bb) { return (Index)std::round(std::log2(bb)); }
+constexpr Index BitBoardToIndex(BitBoard bb) { return (Index)std::round(std::log2(bb)); }
 
 /**
- * @brief Changes an `Index` to a `Bitboard`.
+ * @brief Changes an `Index` to a `BitBoard`.
  * @param index The `Index` to convert.
- * @return The `Bitboard`. Ex: 12 -> 0x00'00'00'00'00'00'10'00.
+ * @return The `BitBoard`. Ex: 12 -> 0x00'00'00'00'00'00'10'00.
  * @date 2026-07-07
  */
-constexpr Bitboard IndexToBitboard(Index index) { return (Bitboard)1 << index; }
+constexpr BitBoard IndexToBitBoard(Index index) { return (BitBoard)1 << index; }
 
 // Convert given castling move to actual move.
 std::string_view CastleToMove(std::string_view move, Enums::Colour player);
@@ -75,14 +75,14 @@ Index MoveToIndex(std::string_view move);
 std::string FenToString(std::string_view fen);
 
 /**
- * @brief Changes a `Bitboard` to a printable string.
- * @param bb The `Bitboard` to convert.
+ * @brief Changes a `BitBoard` to a printable string.
+ * @param bb The `BitBoard` to convert.
  * @param on  The char to use when 1 is detected.
  * @param off The char to use when 0 is detected.
  * @return The string representation.
  * @date 2026-07-07
  */
-std::string BitboardToString(Bitboard bb, char on = 'X', char off = ' ');
+std::string BitBoardToString(BitBoard bb, char on = 'X', char off = ' ');
 
 /**
  * @brief Changes a `Piece` list to a printable string.

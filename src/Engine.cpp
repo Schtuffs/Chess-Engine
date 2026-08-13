@@ -11,29 +11,38 @@
 #include "Fen.h"
 #include "Utils.h"
 
-// ----- Creation / Destruction -----
+// ----- Variables -----
 
-Engine::Engine()
-    : m_name("EngineOfRunning"), m_author("Schtuffs"), m_isWhiteTurn(true), m_halfMoves(0)
-{
-}
+static constexpr u64 INVALID_VALUE = 0xff'ff'ff'ff'ff'ff'ff'ff;
+// clang-format off
+static constexpr std::array<std::pair<std::string_view, u16>, 12> SEARCH_PARAMS = {
+    std::pair{"wtime",       0x00'01},
+    std::pair{"btime",       0x00'02},
+    std::pair{"winc",        0x00'04},
+    std::pair{"binc",        0x00'08},
+    std::pair{"movestogo",   0x00'10},
+    std::pair{"movetime",    0x00'20},
 
-Engine::~Engine() {}
+    std::pair{"depth",       0x00'40},
+    std::pair{"nodes",       0x00'80},
+    std::pair{"mate",        0x01'00},
+    std::pair{"infinite",    0x02'00},
 
-// ----- Read -----
+    std::pair{"ponder",      0x04'00},
+    std::pair{"searchmoves", 0x08'00},
+};
+// clang-format on
 
-std::string Engine::Name() const noexcept { return m_name; }
+static bool  m_isWhiteTurn = true;
+static Board m_board;
 
-std::string Engine::Author() const noexcept { return m_author; }
+static std::atomic<bool> m_isSearching;   // Search algorithm can change this when done
+static std::atomic<bool> m_stopSearching; // Main thread can call this to end engine
+static std::pair<u16, std::array<u64, 12>> m_searchParams;
 
-std::string Engine::GetState() const noexcept
-{
-    return m_board.ToString();
-}
+// ----- Helpers -----
 
-// ----- Read ----- Hidden -----
-
-u64 Engine::GetSearchParamKey(std::string_view str) const noexcept
+u64 GetSearchParamKey(std::string_view str)
 {
     for (u64 i = 0; i < SEARCH_PARAMS.size(); i++) {
         if (SEARCH_PARAMS[i].first == str) {
@@ -44,7 +53,7 @@ u64 Engine::GetSearchParamKey(std::string_view str) const noexcept
     return INVALID_VALUE;
 }
 
-u64 Engine::GetSearchParamValue(std::string_view str) const noexcept
+u64 GetSearchParamValue(std::string_view str)
 {
     try {
         return std::stoull(str.data());
@@ -53,9 +62,19 @@ u64 Engine::GetSearchParamValue(std::string_view str) const noexcept
     }
 }
 
-bool Engine::ValidValue(u64 val) const noexcept { return (val != INVALID_VALUE); }
+bool ValidValue(u64 val) { return (val != INVALID_VALUE); }
 
-u64 Engine::KeyIndex(u64 key) const noexcept { return std::log2(key); }
+u64 KeyIndex(u64 key) { return std::log2(key); }
+
+// ----- Read -----
+
+std::string Engine::Name() { return "EngineOfRunning"; }
+
+std::string Engine::Author() { return "Schtuffs"; }
+
+std::string Engine::GetState() { return m_board.ToString(); }
+
+bool Engine::IsSearching() { return !m_stopSearching; }
 
 // ----- Update -----
 
@@ -84,7 +103,6 @@ bool Engine::SetState(std::string_view data)
     // Get fen
     ss >> token;
     if (token == "startpos") {
-        std::println("Start");
         token = DEFAULT_FEN;
     }
 
@@ -109,9 +127,7 @@ bool Engine::SetState(std::string_view data)
     // Play moves
     ss >> token;
     while (!ss.fail()) {
-        if (m_board.MakeMove(token)) {
-            m_halfMoves++;
-        }
+        m_board.MakeMove(token);
         ss >> token;
     }
     DebugPrintln("Engine::SetState: Valid fen: {}", m_board.Fen());
@@ -150,6 +166,11 @@ void Engine::Search(std::string_view data)
 #endif
 
     std::thread(Search::Begin, std::ref(m_board)).detach();
+}
+
+bool Engine::MakeMove(std::string_view move)
+{
+    return m_board.MakeMove(move);
 }
 
 void Engine::Stop() { m_stopSearching = true; }

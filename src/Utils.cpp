@@ -59,6 +59,7 @@ void Utils::Detail::UnlockPrint(Utils::LogLevel ll)
 {
 #ifdef FILES_ALL_CONSOLE
     (void)ll;
+    std::fflush(stdout);
     mtxPrint.unlock();
 #else
     switch (ll) {
@@ -72,6 +73,7 @@ void Utils::Detail::UnlockPrint(Utils::LogLevel ll)
         mtxInfo.unlock();
         break;
     case Utils::LogLevel::PRINT:
+        std::fflush(stdout);
         mtxPrint.unlock();
         break;
     case Utils::LogLevel::WARNING:
