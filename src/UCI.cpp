@@ -1,5 +1,8 @@
 #include "UCI.h"
 
+#include <chrono>
+#include <thread>
+
 #include <charconv>
 #include <iostream>
 #include <print>
@@ -7,7 +10,8 @@
 #include <string>
 
 #include "Engine.h"
-#include "Utils.h"
+#include "Utils/Fen.h"
+#include "Utils/Utils.h"
 
 // ----- Update -----
 
@@ -40,7 +44,7 @@ void UCI::Loop(int argc, char** argv)
         }
 
         else if (token == "ucinewgame") {
-            Engine::SetState(std::string(" ") + DEFAULT_FEN.data());
+            Engine::SetState(std::string(" ") + Fen::DEFAULT.data());
         }
 
         else if (token == "isready") {
@@ -51,7 +55,7 @@ void UCI::Loop(int argc, char** argv)
         else if (token == "setoption") {
         }
 
-        else if (token == "position") {
+        else if (token == "Types/Position") {
             Engine::SetState(ss.str());
         }
 

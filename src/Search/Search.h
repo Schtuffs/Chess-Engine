@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Board.h"
+#include "Types/Position.h"
 
 namespace Search {
-    void Begin(const Board& board);
+    void Begin(const Position& position);
 };

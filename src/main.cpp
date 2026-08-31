@@ -34,9 +34,9 @@ Extra:
 #include <sstream>
 #include <string>
 
-#include "Constants.h"
 #include "UCI.h"
-#include "Utils.h"
+#include "Utils/Constants.h"
+#include "Utils/Utils.h"
 
 void PrintEngineVersion()
 {

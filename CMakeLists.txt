@@ -6,21 +6,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SRC     ${CMAKE_CURRENT_LIST_DIR}/src)
 set(INCLUDE ${CMAKE_CURRENT_LIST_DIR}/include)
+set(EVAL    ${SRC}/Evaluation)
 set(MOVEGEN ${SRC}/MoveGen)
 set(SEARCH  ${SRC}/Search)
+set(TYPES   ${SRC}/Types)
+set(UTILS   ${SRC}/Utils)
 
 add_executable(${PROJECT_NAME}
-    ${SRC}/Board.cpp
-    ${SRC}/Convert.cpp
     ${SRC}/Engine.cpp
-    ${SRC}/Fen.cpp
     ${SRC}/main.cpp
-    ${SRC}/Piece.cpp
-    ${SRC}/Utils.cpp
     ${SRC}/UCI.cpp
+    ${EVAL}/Evaluation.cpp
     ${MOVEGEN}/Magic.cpp
     ${MOVEGEN}/MoveGen.cpp
     ${SEARCH}/Search.cpp
+    ${TYPES}/Position.cpp
+    ${UTILS}/Fen.cpp
+    ${UTILS}/Utils.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${SRC})

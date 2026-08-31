@@ -5,11 +5,6 @@
 #include <cmath>
 #include <print>
 
-#include "Convert.h"
-#include "Utils.h"
-
-// #define SHUSH
-
 // ----- Preparation -----
 
 typedef struct MagicStruct {
@@ -19,11 +14,11 @@ typedef struct MagicStruct {
     u64 offset;
 } MagicStruct;
 
-static constexpr u64 GenMask(i32 index, bool isRook)
+static constexpr u64 GenMask(i32 sq, bool isRook)
 {
     u64 mask = 0ull;
-    i32 rank = index / 8;
-    i32 file = index % 8;
+    i32 rank = sq / 8;
+    i32 file = sq % 8;
 
     // clang-format off
     if (isRook) {
@@ -43,7 +38,7 @@ static constexpr u64 GenMask(i32 index, bool isRook)
     return mask;
 }
 
-static constexpr u64 SetBlockers(i32 index, i32 maskBits, u64 mask)
+static constexpr u64 SetBlockers(i32 sq, i32 maskBits, u64 mask)
 {
     u64 blockers = 0;
 
@@ -51,7 +46,7 @@ static constexpr u64 SetBlockers(i32 index, i32 maskBits, u64 mask)
         i32 square = std::countr_zero(mask);
         mask &= mask - 1;
 
-        if (index & (1ull << i)) {
+        if (sq & (1ull << i)) {
             blockers |= (1ull << square);
         }
     }
@@ -59,11 +54,11 @@ static constexpr u64 SetBlockers(i32 index, i32 maskBits, u64 mask)
     return blockers;
 }
 
-static constexpr u64 CalculateAttacks(Index index, u64 pieces, bool isRook)
+static constexpr u64 CalculateAttacks(Square sq, BitBoard pieces, bool isRook)
 {
-    u64 attacks = 0ull;
-    i32 rank    = (i32)index / 8;
-    i32 file    = (i32)index % 8;
+    BitBoard attacks;
+    i32      rank = (i32)sq / 8;
+    i32      file = (i32)sq % 8;
 
     i32 dRank[4] = {0};
     i32 dFile[4] = {0};
@@ -89,10 +84,10 @@ static constexpr u64 CalculateAttacks(Index index, u64 pieces, bool isRook)
         i32 targetFile = file + dFile[i];
 
         while (targetRank >= 0 && targetRank < 8 && targetFile >= 0 && targetFile < 8) {
-            i32 targetIndex = targetRank * 8 + targetFile;
-            attacks |= (1ull << targetIndex);
+            Square targetIndex = Square(targetRank * 8 + targetFile);
+            attacks |= targetIndex;
 
-            if (pieces & (1ull << targetIndex)) {
+            if (pieces & targetIndex) {
                 break;
             }
 
@@ -101,35 +96,143 @@ static constexpr u64 CalculateAttacks(Index index, u64 pieces, bool isRook)
         }
     }
 
-    return attacks;
+    return attacks.raw();
 }
 
 // clang-format off
 
+constexpr std::array<u64, 64> KING_MOVES = {
+    0x00'00'00'00'00'00'03'03, 0x00'00'00'00'00'00'07'07, 0x00'00'00'00'00'00'0e'0e, 0x00'00'00'00'00'00'1c'1c,
+    0x00'00'00'00'00'00'38'38, 0x00'00'00'00'00'00'70'70, 0x00'00'00'00'00'00'e0'e0, 0x00'00'00'00'00'00'c0'c0,
+
+    0x00'00'00'00'00'03'03'03, 0x00'00'00'00'00'07'07'07, 0x00'00'00'00'00'0e'0e'0e, 0x00'00'00'00'00'1c'1c'1c,
+    0x00'00'00'00'00'38'38'38, 0x00'00'00'00'00'70'70'70, 0x00'00'00'00'00'e0'e0'e0, 0x00'00'00'00'00'c0'c0'c0,
+
+    0x00'00'00'00'03'03'03'00, 0x00'00'00'00'07'07'07'00, 0x00'00'00'00'0e'0e'0e'00, 0x00'00'00'00'1c'1c'1c'00,
+    0x00'00'00'00'38'38'38'00, 0x00'00'00'00'70'70'70'00, 0x00'00'00'00'e0'e0'e0'00, 0x00'00'00'00'c0'c0'c0'00,
+
+    0x00'00'00'03'03'03'00'00, 0x00'00'00'07'07'07'00'00, 0x00'00'00'0e'0e'0e'00'00, 0x00'00'00'1c'1c'1c'00'00,
+    0x00'00'00'38'38'38'00'00, 0x00'00'00'70'70'70'00'00, 0x00'00'00'e0'e0'e0'00'00, 0x00'00'00'c0'c0'c0'00'00,
+
+    0x00'00'03'03'03'00'00'00, 0x00'00'07'07'07'00'00'00, 0x00'00'0e'0e'0e'00'00'00, 0x00'00'1c'1c'1c'00'00'00,
+    0x00'00'38'38'38'00'00'00, 0x00'00'70'70'70'00'00'00, 0x00'00'e0'e0'e0'00'00'00, 0x00'00'c0'c0'c0'00'00'00,
+
+    0x00'03'03'03'00'00'00'00, 0x00'07'07'07'00'00'00'00, 0x00'0e'0e'0e'00'00'00'00, 0x00'1c'1c'1c'00'00'00'00,
+    0x00'38'38'38'00'00'00'00, 0x00'70'70'70'00'00'00'00, 0x00'e0'e0'e0'00'00'00'00, 0x00'c0'c0'c0'00'00'00'00,
+
+    0x03'03'03'00'00'00'00'00, 0x07'07'07'00'00'00'00'00, 0x0e'0e'0e'00'00'00'00'00, 0x1c'1c'1c'00'00'00'00'00,
+    0x38'38'38'00'00'00'00'00, 0x70'70'70'00'00'00'00'00, 0xe0'e0'e0'00'00'00'00'00, 0xc0'c0'c0'00'00'00'00'00,
+
+    0x03'03'00'00'00'00'00'00, 0x07'07'00'00'00'00'00'00, 0x0e'0e'00'00'00'00'00'00, 0x1c'1c'00'00'00'00'00'00,
+    0x38'38'00'00'00'00'00'00, 0x70'70'00'00'00'00'00'00, 0xe0'e0'00'00'00'00'00'00, 0xc0'c0'00'00'00'00'00'00,
+};
+
+constexpr std::array<u64, 64> KNIGHT_MOVES = {
+    0x00'00'00'00'00'02'04'00, 0x00'00'00'00'00'05'08'00, 0x00'00'00'00'00'0a'11'00, 0x00'00'00'00'00'14'22'00,
+    0x00'00'00'00'00'28'44'00, 0x00'00'00'00'00'50'88'00, 0x00'00'00'00'00'a0'10'00, 0x00'00'00'00'00'40'20'00,
+
+    0x00'00'00'00'02'04'00'04, 0x00'00'00'00'05'08'00'08, 0x00'00'00'00'0a'11'00'11, 0x00'00'00'00'14'22'00'22,
+    0x00'00'00'00'28'44'00'44, 0x00'00'00'00'50'88'00'88, 0x00'00'00'00'a0'10'00'10, 0x00'00'00'00'40'20'00'20,
+
+    0x00'00'00'02'04'00'04'02, 0x00'00'00'05'08'00'08'05, 0x00'00'00'0a'11'00'11'0a, 0x00'00'00'14'22'00'22'14,
+    0x00'00'00'28'44'00'44'28, 0x00'00'00'50'88'00'88'50, 0x00'00'00'a0'10'00'10'a0, 0x00'00'00'40'20'00'20'40,
+
+    0x00'00'02'04'00'04'02'00, 0x00'00'05'08'00'08'05'00, 0x00'00'0a'11'00'11'0a'00, 0x00'00'14'22'00'22'14'00,
+    0x00'00'28'44'00'44'28'00, 0x00'00'50'88'00'88'50'00, 0x00'00'a0'10'00'10'a0'00, 0x00'00'40'20'00'20'40'00,
+
+    0x00'02'04'00'04'02'00'00, 0x00'05'08'00'08'05'00'00, 0x00'0a'11'00'11'0a'00'00, 0x00'14'22'00'22'14'00'00,
+    0x00'28'44'00'44'28'00'00, 0x00'50'88'00'88'50'00'00, 0x00'a0'10'00'10'a0'00'00, 0x00'40'20'00'20'40'00'00,
+
+    0x02'04'00'04'02'00'00'00, 0x05'08'00'08'05'00'00'00, 0x0a'11'00'11'0a'00'00'00, 0x14'22'00'22'14'00'00'00,
+    0x28'44'00'44'28'00'00'00, 0x50'88'00'88'50'00'00'00, 0xa0'10'00'10'a0'00'00'00, 0x40'20'00'20'40'00'00'00,
+
+    0x04'00'04'02'00'00'00'00, 0x08'00'08'05'00'00'00'00, 0x11'00'11'0a'00'00'00'00, 0x22'00'22'14'00'00'00'00,
+    0x44'00'44'28'00'00'00'00, 0x88'00'88'50'00'00'00'00, 0x10'00'10'a0'00'00'00'00, 0x20'00'20'40'00'00'00'00,
+
+    0x00'04'02'00'00'00'00'00, 0x00'08'05'00'00'00'00'00, 0x00'11'0a'00'00'00'00'00, 0x00'22'14'00'00'00'00'00,
+    0x00'44'28'00'00'00'00'00, 0x00'88'50'00'00'00'00'00, 0x00'10'a0'00'00'00'00'00, 0x00'20'40'00'00'00'00'00,
+};
+
+constexpr std::array<std::array<BitBoard, 64>, 2> PAWN_MOVES = {{
+    // White
+    {{
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+
+        0x00'00'00'00'00'02'01'00ull, 0x00'00'00'00'00'05'02'00ull, 0x00'00'00'00'00'0a'04'00ull, 0x00'00'00'00'00'14'08'00ull,
+        0x00'00'00'00'00'28'10'00ull, 0x00'00'00'00'00'50'20'00ull, 0x00'00'00'00'00'a0'40'00ull, 0x00'00'00'00'00'40'80'00ull,
+
+        0x00'00'00'00'02'01'00'00ull, 0x00'00'00'00'05'02'00'00ull, 0x00'00'00'00'0a'04'00'00ull, 0x00'00'00'00'14'08'00'00ull,
+        0x00'00'00'00'28'10'00'00ull, 0x00'00'00'00'50'20'00'00ull, 0x00'00'00'00'a0'40'00'00ull, 0x00'00'00'00'40'80'00'00ull,
+
+        0x00'00'00'02'01'00'00'00ull, 0x00'00'00'05'02'00'00'00ull, 0x00'00'00'0a'04'00'00'00ull, 0x00'00'00'14'08'00'00'00ull,
+        0x00'00'00'28'10'00'00'00ull, 0x00'00'00'50'20'00'00'00ull, 0x00'00'00'a0'40'00'00'00ull, 0x00'00'00'40'80'00'00'00ull,
+
+        0x00'00'02'01'00'00'00'00ull, 0x00'00'05'02'00'00'00'00ull, 0x00'00'0a'04'00'00'00'00ull, 0x00'00'14'08'00'00'00'00ull,
+        0x00'00'28'10'00'00'00'00ull, 0x00'00'50'20'00'00'00'00ull, 0x00'00'a0'40'00'00'00'00ull, 0x00'00'40'80'00'00'00'00ull,
+
+        0x00'02'01'00'00'00'00'00ull, 0x00'05'02'00'00'00'00'00ull, 0x00'0a'04'00'00'00'00'00ull, 0x00'14'08'00'00'00'00'00ull,
+        0x00'28'10'00'00'00'00'00ull, 0x00'50'20'00'00'00'00'00ull, 0x00'a0'40'00'00'00'00'00ull, 0x00'40'80'00'00'00'00'00ull,
+
+        0x02'01'00'00'00'00'00'00ull, 0x05'02'00'00'00'00'00'00ull, 0x0a'04'00'00'00'00'00'00ull, 0x14'08'00'00'00'00'00'00ull,
+        0x28'10'00'00'00'00'00'00ull, 0x50'20'00'00'00'00'00'00ull, 0xa0'40'00'00'00'00'00'00ull, 0x40'80'00'00'00'00'00'00ull,
+
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+    }},
+
+    // Black
+    {{
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+
+        0x00'00'00'00'00'00'01'02ull, 0x00'00'00'00'00'00'02'05ull, 0x00'00'00'00'00'00'04'0aull, 0x00'00'00'00'00'00'08'14ull,
+        0x00'00'00'00'00'00'10'28ull, 0x00'00'00'00'00'00'20'50ull, 0x00'00'00'00'00'00'40'a0ull, 0x00'00'00'00'00'00'80'40ull,
+
+        0x00'00'00'00'00'01'02'00ull, 0x00'00'00'00'00'02'05'00ull, 0x00'00'00'00'00'04'0a'00ull, 0x00'00'00'00'00'08'14'00ull,
+        0x00'00'00'00'00'10'28'00ull, 0x00'00'00'00'00'20'50'00ull, 0x00'00'00'00'00'40'a0'00ull, 0x00'00'00'00'00'80'40'00ull,
+
+        0x00'00'00'00'01'02'00'00ull, 0x00'00'00'00'02'05'00'00ull, 0x00'00'00'00'04'0a'00'00ull, 0x00'00'00'00'08'14'00'00ull,
+        0x00'00'00'00'10'28'00'00ull, 0x00'00'00'00'20'50'00'00ull, 0x00'00'00'00'40'a0'00'00ull, 0x00'00'00'00'80'40'00'00ull,
+
+        0x00'00'00'01'02'00'00'00ull, 0x00'00'00'02'05'00'00'00ull, 0x00'00'00'04'0a'00'00'00ull, 0x00'00'00'08'14'00'00'00ull,
+        0x00'00'00'10'28'00'00'00ull, 0x00'00'00'20'50'00'00'00ull, 0x00'00'00'40'a0'00'00'00ull, 0x00'00'00'80'40'00'00'00ull,
+
+        0x00'00'01'02'00'00'00'00ull, 0x00'00'02'05'00'00'00'00ull, 0x00'00'04'0a'00'00'00'00ull, 0x00'00'08'14'00'00'00'00ull,
+        0x00'00'10'28'00'00'00'00ull, 0x00'00'20'50'00'00'00'00ull, 0x00'00'40'a0'00'00'00'00ull, 0x00'00'80'40'00'00'00'00ull,
+
+        0x00'01'02'00'00'00'00'00ull, 0x00'02'05'00'00'00'00'00ull, 0x00'04'0a'00'00'00'00'00ull, 0x00'08'14'00'00'00'00'00ull,
+        0x00'10'28'00'00'00'00'00ull, 0x00'20'50'00'00'00'00'00ull, 0x00'40'a0'00'00'00'00'00ull, 0x00'80'40'00'00'00'00'00ull,
+
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+        0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull, 0x00'00'00'00'00'00'00'00ull,
+    }}
+}};
+
 constexpr std::array<u64, 64> MAGIC_BISHOP_NUMBERS = {
-    0xE51EBB94FBE45BFFull, 0xC7B9F567ED8FFE7Full, 0x19A8282157800224ull, 0x04D41401923C73BEull,
-    0x480404A14244000Dull, 0x340E01FEA0C933AFull, 0xFFC3F989D57FE9ECull, 0xF7FF3FDD6EFBFFFFull,
+    0x001024b002420160ull, 0x1008080140420021ull, 0x2012080041080024ull, 0x0c282601408c0802ull,
+    0x2004042000000002ull, 0x0012021004022080ull, 0x0880414820100000ull, 0x4501002211044000ull,
 
-    0xE7F974F4F9D9F7F5ull, 0x222161180311C580ull, 0x62003808704081A0ull, 0x70425C0408830360ull,
-    0x66E5E110419250CDull, 0x8420220834154952ull, 0xEDE7F5ADF8FDFFFDull, 0x7F7EEA5F3D59BF5Eull,
+    0x0020402222121600ull, 0x1081088a28022020ull, 0x01004c2810851064ull, 0x2040080841004918ull,
+    0x1448020210201017ull, 0x4808110108400025ull, 0x0010504404054004ull, 0x0800010422092400ull,
 
-    0x4478024050810631ull, 0x2A22030490025601ull, 0xD0E4044848002500ull, 0x518C08C801212289ull,
-    0x1002004402111108ull, 0x5858102901009007ull, 0x2230A1C412051005ull, 0x142B042E41082700ull,
+    0x0040000870450250ull, 0x0402040408080518ull, 0x001000980a404108ull, 0x0001020804110080ull,
+    0x0008200c02082005ull, 0x00040802009a0800ull, 0x0001000201012100ull, 0x0111080200820180ull,
 
-    0x882011AE8850A508ull, 0x274320C508181108ull, 0x080090048E040014ull, 0x508C00C01C0100B2ull,
-    0x424300102B004000ull, 0x0490144022080230ull, 0x20C280B11C020814ull, 0x00020600C42C9212ull,
+    0x0904122104101024ull, 0x4008200405244084ull, 0x0044040002182400ull, 0x4804080004021002ull,
+    0x6401004024004040ull, 0x0404010001300a20ull, 0x0428020200a20100ull, 0x0300460100420200ull,
 
-    0xF3BFC5C66B10122Full, 0xA25801B000C42434ull, 0x500144A208900400ull, 0x6080140400780120ull,
-    0x124C0B40100C0100ull, 0x7048004100909018ull, 0xE8781EC402008A01ull, 0x4D221A0600807284ull,
+    0x000404200c062000ull, 0x0022101400510141ull, 0x0104044400180031ull, 0x2040040400280211ull,
+    0x0008020400401010ull, 0x20100110401a0040ull, 0x00100101005a2080ull, 0x001a008300042411ull,
 
-    0xED4FF5C4EA9B2418ull, 0x6D9FE6F7B7EFDEB4ull, 0x433D610048044041ull, 0x00086A2018040300ull,
-    0x214B14110C006200ull, 0x60D2241106001C0Aull, 0x2B7F1018F2EBFDCCull, 0x783438008E252100ull,
+    0x120a025004504000ull, 0x4001084242101000ull, 0x0a020202010a4200ull, 0x4000002018000100ull,
+    0x0000080104000044ull, 0x1004009806004043ull, 0x100401080a000112ull, 0x1041012101000608ull,
 
-    0xEFBFFD71EEAD7FFFull, 0xD597FE7D435F79FFull, 0x9FFFF7FB3D9C7377ull, 0x8910144620981000ull,
-    0xE40D01A0208A40F9ull, 0xA63240B31425025Cull, 0x9EFFEBF61DD769FBull, 0x877FCE36D752FA8Eull,
+    0x040400c250100140ull, 0x080a10460a100002ull, 0x2210030401240002ull, 0x06040aa108481b20ull,
+    0x4009004050410002ull, 0x08106003420200e0ull, 0x1410500a08206000ull, 0x0092548802004000ull,
 
-    0xEB5FFD776D5FDFBEull, 0xD7FDFFFEBCF2DEFFull, 0xD01801C04208900Full, 0x830639EF5720980Aull,
-    0xC9C018202182C400ull, 0x893B2D4094880E8Cull, 0xFBBEFDF552EB5AE6ull, 0xFEFFFBFB7BDFDDFBull,
+    0x0001040041241028ull, 0x0000120042025011ull, 0x0008060104054400ull, 0x20004404020a0a01ull,
+    0x0040008010020214ull, 0x04000050209802c1ull, 0x0000208244210400ull, 0x0010140848044010ull,
 };
 
 constexpr std::array<u64, 64> MAGIC_ROOK_NUMBERS = {
@@ -201,7 +304,7 @@ consteval MagicTable CreateMagicTable()
     u32        curBishopOffset = 0;
     u32        curRookOffset   = 0;
 
-    for (Index sq = 0; sq < 64; sq++) {
+    for (Square sq = SQ_A1; sq < 64; ++sq) {
         // Rooks
         table.rookMagic[sq].mask   = GenMask(sq, true);
         table.rookMagic[sq].magic  = MAGIC_ROOK_NUMBERS[sq];
@@ -227,6 +330,8 @@ consteval MagicTable CreateMagicTable()
         for (i32 i = 0; i < bishopVar; i++) {
             u64 blockers = SetBlockers(i, MAGIC_BISHOP_BITS[sq], table.bishopMagic[sq].mask);
             u32 hash     = (blockers * table.bishopMagic[sq].magic) >> table.bishopMagic[sq].shift;
+            if (table.bishopAttacks[table.bishopMagic[sq].offset + hash].raw() != 0) {
+            }
             table.bishopAttacks[table.bishopMagic[sq].offset + hash] =
                 CalculateAttacks(sq, blockers, false);
         }
@@ -240,7 +345,7 @@ constexpr u64 INVALID_HASH = 0xff'ff'ff'ff'ff'ff'ff'ff;
 
 // ----- Bishops -----
 
-static constexpr bool ValidBishopIndex(Index bishop, Index king)
+static constexpr bool ValidBishopIndex(Square bishop, Square king)
 {
     i32 kr = king / 8;
     i32 kf = king % 8;
@@ -248,13 +353,13 @@ static constexpr bool ValidBishopIndex(Index bishop, Index king)
     i32 br = bishop / 8;
     i32 bf = bishop % 8;
 
-    i32 rise = (Utils::Max(kr, br) - Utils::Min(kr, br));
-    i32 run  = (Utils::Max(kf, bf) - Utils::Min(kf, bf));
+    i32 rise = (std::max(kr, br) - std::min(kr, br));
+    i32 run  = (std::max(kf, bf) - std::min(kf, bf));
 
     return (rise == run);
 }
 
-static constexpr u64 BishopTableHash(Index bishop, Index king)
+static constexpr u64 BishopTableHash(Square bishop, Square king)
 {
     if (!ValidBishopIndex(bishop, king)) {
         return INVALID_HASH;
@@ -266,10 +371,10 @@ static constexpr u64 BishopTableHash(Index bishop, Index king)
     i32 br = bishop / 8;
     i32 bc = bishop % 8;
 
-    i32 nw = Utils::Min(kr, kc);
-    i32 ne = Utils::Min(kr, 7 - kc);
-    i32 sw = Utils::Min(7 - kr, kc);
-    // i32 se = Utils::Min(7 - kr, 7 - kc);
+    i32 nw = std::min(kr, kc);
+    i32 ne = std::min(kr, 7 - kc);
+    i32 sw = std::min(7 - kr, kc);
+    // i32 se = std::min(7 - kr, 7 - kc);
 
     u64 hash;
 
@@ -293,9 +398,9 @@ static constexpr u64 BishopTableHash(Index bishop, Index king)
     return (hash + (king * 14));
 }
 
-static constexpr BitBoard CalculateBishopAttacks(Index bishop, Index king)
+static constexpr BitBoard CalculateBishopAttacks(Square bishop, Square king)
 {
-    BitBoard bb = 0;
+    BitBoard bb;
 
     i32 kf = king % 8;
     i32 kr = king / 8;
@@ -317,9 +422,9 @@ static constexpr BitBoard CalculateBishopAttacks(Index bishop, Index king)
         }
     }
 
-    Index end = std::abs(kf - bf);
-    for (Index i = 0; i < end; i++) {
-        bb |= Convert::IndexToBitBoard((offset * i) + bishop);
+    Square end = (Square)std::abs(kf - bf);
+    for (Square i = SQ_A1; i < end; i++) {
+        bb |= (Square)((offset * i) + bishop);
     }
 
     return bb;
@@ -327,19 +432,19 @@ static constexpr BitBoard CalculateBishopAttacks(Index bishop, Index king)
 
 // ----- Rooks -----
 
-static constexpr bool ValidRookIndex(Index rook, Index king)
+static constexpr bool ValidRookIndex(Square rook, Square king)
 {
     // Vert
-    Index pFile = rook % 8;
-    Index kFile = king % 8;
+    Square pFile = rook % 8;
+    Square kFile = king % 8;
 
     if (pFile == kFile) {
         return true;
     }
 
     // Horz
-    Index pRank = rook / 8;
-    Index kRank = king / 8;
+    Square pRank = rook / 8;
+    Square kRank = king / 8;
 
     if (pRank == kRank) {
         return true;
@@ -348,7 +453,7 @@ static constexpr bool ValidRookIndex(Index rook, Index king)
     return false;
 }
 
-static constexpr u64 RookTableHash(Index rook, Index king)
+static constexpr u64 RookTableHash(Square rook, Square king)
 {
     if (!ValidRookIndex(rook, king)) {
         return INVALID_HASH;
@@ -381,26 +486,26 @@ static constexpr u64 RookTableHash(Index rook, Index king)
     return ((king * 14) + hash);
 }
 
-static constexpr BitBoard CalculateRookAttacks(Index rook, Index king)
+static constexpr BitBoard CalculateRookAttacks(Square rook, Square king)
 {
-    BitBoard bb = 0;
+    BitBoard bb;
 
     // Horizontal
     if ((rook / 8) == (king / 8)) {
-        Index start = Utils::Min(rook, king);
-        Index end   = Utils::Max(rook, king);
+        Square start = std::min(rook, king);
+        Square end   = std::max(rook, king);
 
-        for (Index i = start; i < end; i++) {
-            bb |= Convert::IndexToBitBoard(i);
+        for (Square i = start; i < end; i++) {
+            bb |= i;
         }
     }
     // Vertical
     else if ((rook % 8) == (king % 8)) {
-        Index start = Utils::Min(rook, king);
-        Index end   = Utils::Max(rook, king);
+        Square start = std::min(rook, king);
+        Square end   = std::max(rook, king);
 
-        for (Index i = start; i < end; i += 8) {
-            bb |= Convert::IndexToBitBoard(i);
+        for (Square i = start; i < end; i += 8) {
+            bb |= i;
         }
     }
 
@@ -409,12 +514,12 @@ static constexpr BitBoard CalculateRookAttacks(Index rook, Index king)
 
 // ----- Magic -----
 
-constexpr KingTable CreateKingTable()
+consteval KingTable CreateKingTable()
 {
     KingTable table{};
 
-    for (Index sq = 0; sq < 64; sq++) {
-        for (Index king = 0; king < 64; king++) {
+    for (Square sq = SQ_A1; sq < SQ_TOTAL; sq++) {
+        for (Square king = SQ_A1; king < SQ_TOTAL; king++) {
             // No need for same square
             if (king == sq) {
                 continue;
@@ -437,68 +542,78 @@ constexpr KingTable CreateKingTable()
     return table;
 }
 
-#ifndef SHUSH
 inline constexpr MagicTable magics = CreateMagicTable();
-#endif
 
 inline constexpr KingTable kingAttacks = CreateKingTable();
 
 // ----- Secrets -----
 
-#ifndef SHUSH
-static constexpr BitBoard GetBishopAttacks(Index index, BitBoard blockers)
+static constexpr BitBoard GetBishopAttacks(Square sq, BitBoard occupied)
 {
-    blockers &= magics.bishopMagic[index].mask;
-    u32 hash = (blockers * magics.bishopMagic[index].magic) >> magics.bishopMagic[index].shift;
-    return magics.bishopAttacks[magics.bishopMagic[index].offset + hash];
+    occupied &= magics.bishopMagic[sq].mask;
+    u32 hash = (occupied * magics.bishopMagic[sq].magic) >> magics.bishopMagic[sq].shift;
+    return magics.bishopAttacks[magics.bishopMagic[sq].offset + hash];
 }
 
-static_assert(GetBishopAttacks(54, 0x58'd8'00'00'00'00'ef'ff) == 0xa0'00'a0'10'08'04'02'00);
-
-static constexpr BitBoard GetRookAttacks(Index index, BitBoard blockers)
+static constexpr BitBoard GetRookAttacks(Square sq, BitBoard occupied)
 {
-    blockers &= magics.rookMagic[index].mask;
-    u32 hash = (blockers * magics.rookMagic[index].magic) >> magics.rookMagic[index].shift;
-    return magics.rookAttacks[magics.rookMagic[index].offset + hash];
+    occupied &= magics.rookMagic[sq].mask;
+    u32 hash = (occupied * magics.rookMagic[sq].magic) >> magics.rookMagic[sq].shift;
+    return magics.rookAttacks[magics.rookMagic[sq].offset + hash];
 }
-#endif
 
-static constexpr BitBoard GetBishopKingAttacks(Index bishop, Index king)
+static constexpr BitBoard GetBishopKingAttacks(Square bishop, Square king)
 {
     u64 hash = BishopTableHash(bishop, king);
     if (hash == INVALID_HASH) {
-        return 0;
+        return 0ull;
     }
     return kingAttacks.bishop[hash];
 }
 
-static constexpr BitBoard GetRookKingAttacks(Index rook, Index king)
+static constexpr BitBoard GetRookKingAttacks(Square rook, Square king)
 {
     u64 hash = RookTableHash(rook, king);
     if (hash == INVALID_HASH) {
-        return 0;
+        return 0ull;
     }
     return kingAttacks.rook[hash];
 }
 
 // ----- Public Functions -----
 
-#ifndef SHUSH
-BitBoard Magic::GetSlidingAttacks(Index index, BitBoard blockers, bool isRook)
+template <PieceType type>
+BitBoard Magic::GetAttacks(Square sq, BitBoard occupied, Colour player)
 {
-    return (isRook ? GetRookAttacks(index, blockers) : GetBishopAttacks(index, blockers));
+    if constexpr (type == BISHOP) {
+        return GetBishopAttacks(sq, occupied);
+    }
+    if constexpr (type == KING) {
+        return KING_MOVES[sq];
+    }
+    if constexpr (type == KNIGHT) {
+        return KNIGHT_MOVES[sq];
+    }
+    if constexpr (type == PAWN) {
+        return PAWN_MOVES[player][sq];
+    }
+    if constexpr (type == QUEEN) {
+        return GetBishopAttacks(sq, occupied) | GetRookAttacks(sq, occupied);
+    }
+    if constexpr (type == ROOK) {
+        return GetRookAttacks(sq, occupied);
+    }
+    return BitBoard(0ull);
 }
-#else
-BitBoard Magic::GetSlidingAttacks(Index index, BitBoard blockers, bool isRook)
-{
-    (void)index;
-    (void)blockers;
-    (void)isRook;
-    return 0;
-}
-#endif
 
-BitBoard Magic::GetKingAttacks(Index piece, Index king, bool isRook)
+BitBoard Magic::GetKingAttacks(Square sq, Square king, bool isRook)
 {
-    return (isRook ? GetRookKingAttacks(piece, king) : GetBishopKingAttacks(piece, king));
+    return (isRook ? GetRookKingAttacks(sq, king) : GetBishopKingAttacks(sq, king));
 }
+
+template BitBoard Magic::GetAttacks<BISHOP>(Square sq, BitBoard occupied, Colour player);
+template BitBoard Magic::GetAttacks<KING>(Square sq, BitBoard occupied, Colour player);
+template BitBoard Magic::GetAttacks<KNIGHT>(Square sq, BitBoard occupied, Colour player);
+template BitBoard Magic::GetAttacks<PAWN>(Square sq, BitBoard occupied, Colour player);
+template BitBoard Magic::GetAttacks<QUEEN>(Square sq, BitBoard occupied, Colour player);
+template BitBoard Magic::GetAttacks<ROOK>(Square sq, BitBoard occupied, Colour player);

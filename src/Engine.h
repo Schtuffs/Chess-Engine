@@ -6,8 +6,8 @@
 #include <string_view>
 #include <utility>
 
-#include "Board.h"
-#include "Constants.h"
+#include "Types/Position.h"
+#include "Utils/Constants.h"
 
 namespace Engine {
 // Read
@@ -55,7 +55,7 @@ bool SetState(std::string_view data);
 void Search(std::string_view data);
 
 // Allows search to send move to make.
-bool MakeMove(std::string_view data);
+void MakeMove(std::string_view data);
 
 // Stops engine ASAP.
 void Stop();

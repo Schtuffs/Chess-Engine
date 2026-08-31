@@ -1,26 +1,13 @@
-#include "Utils.h"
+#include "Utils/Utils.h"
 
 #include <atomic>
 #include <cstdio>
 #include <mutex>
 
-bool Utils::IsValidIndex(Index index) { return (index < 64); }
-
-Enums::Colour Utils::SwapColour(Enums::Colour colour)
-{
-    if (colour == Enums::Colour::White) {
-        return Enums::Colour::Black;
-    }
-
-    if (colour == Enums::Colour::Black) {
-        return Enums::Colour::White;
-    }
-
-    return colour;
-}
+#include "Utils/Constants.h"
 
 static std::mutex                   mtxPrint, mtxDebug, mtxError, mtxInfo, mtxWarning;
-static std::atomic<Utils::LogLevel> s_logLevel = Utils::LogLevel::DEBUG;
+static std::atomic<Utils::LogLevel> s_logLevel = Utils::LogLevel::ERROR;
 
 bool Utils::Detail::LockPrint(Utils::LogLevel ll)
 {
@@ -49,7 +36,7 @@ bool Utils::Detail::LockPrint(Utils::LogLevel ll)
         mtxPrint.lock();
         return true;
     default:
-        ErrorPrintln("Invalid filetype lock: {}", (int)ll);
+        ErrorPrintln("Utils::LockPrint: Invalid filetype lock: {}", (int)ll);
         return false;
     }
 #endif
@@ -59,7 +46,6 @@ void Utils::Detail::UnlockPrint(Utils::LogLevel ll)
 {
 #ifdef FILES_ALL_CONSOLE
     (void)ll;
-    std::fflush(stdout);
     mtxPrint.unlock();
 #else
     switch (ll) {
@@ -73,14 +59,13 @@ void Utils::Detail::UnlockPrint(Utils::LogLevel ll)
         mtxInfo.unlock();
         break;
     case Utils::LogLevel::PRINT:
-        std::fflush(stdout);
         mtxPrint.unlock();
         break;
     case Utils::LogLevel::WARNING:
         mtxWarning.unlock();
         break;
     default:
-        ErrorPrintln("Invalid filetype unlock: {}", (int)ll);
+        ErrorPrintln("Utils::UnlockPrint: Invalid filetype unlock: {}", (int)ll);
         break;
     }
 #endif
