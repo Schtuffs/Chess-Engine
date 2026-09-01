@@ -1,50 +1,60 @@
-#include <iostream>
-#include <glad/glad.h>
-#include <vector>
+/*------------------------------
 
-#include "BoardManager.h"
-#include "Player.h"
-#include "WindowManager.h"
-#include "EventManager.h"
-#include "FpsTracker.h"
+===== TODO =====
 
-// Need to add
-// Stalemate with only knight/bishop - insufficient materials
-// 50 move rule implementation
-// 3-fold repitition
+UCI:
+- quit
+-- Exit program ASAP
+- uci
+-- Use UCI
+- ucinewgame
+-- Next position is a new game
+- isready
+-- Synchronize engine
+- setoption
+-- Change engine parameters
+- position
+-- Setup game position
+- go
+-- Start calculating
+- stop
+-- Stop calculation ASAP, guarenteed after 5 seconds
+- ponderhit
+-- Player played expected move
 
-int main(void) {
-    // Window initialization functions
-    WindowManager::init(WINDOW_SIZE_REGULAR);
-    WindowManager::initCallbacks();
+Extra:
+- flip
+-- Flips the side to move
 
-    // Create players for board
-    Player white(PLAYER_COLOUR_WHITE);
-    Player black(PLAYER_COLOUR_BLACK);
+================
 
-    // Create board manager
-    BoardManager board(white, black, BOARD_GREEN_CREAM);
-    WindowManager::setBoard(board);
+------------------------------*/
 
-    // Create EventManager
-    EventManager events;
-    events.setBoard(&board);
+#include <print>
+#include <sstream>
+#include <string>
 
-    // Main window loop
-    while(!WindowManager::shouldClose()) {
-        // FPS counter so I can optimize a few things
-        FpsTracker::fps();
+#include "UCI.h"
+#include "Utils/Constants.h"
+#include "Utils/Utils.h"
 
-        // Checks for any actions needed to be taken
-        events.manageEvents();
+void PrintEngineVersion()
+{
+    constexpr std::string_view months("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
 
-        // OpenGL functions
-        WindowManager::show();
-        WindowManager::poll();
-    }
+    std::string       month, day, year;
+    std::stringstream date(__DATE__);
 
-    WindowManager::close();
+    date >> month >> day >> year;
+    SyncPrintln("Chess Engine {}.{} - {:04}-{:02}-{:02}", VERSION_MAJOR, VERSION_MINOR,
+                std::stoi(year), (months.find(month) / 4 + 1), std::stoi(day));
+}
+
+int main(int argc, char** argv)
+{
+    PrintEngineVersion();
+
+    UCI::Loop(argc, argv);
 
     return 0;
 }
-
