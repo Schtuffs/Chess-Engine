@@ -10,53 +10,49 @@
 #include "Utils/Constants.h"
 
 namespace Engine {
-// Read
 
-/**
- * @brief Get engines name.
- * @return Engines name.
- * @date 2026-06-20
- */
-std::string Name();
+// ----- Update -----
 
-/**
- * @brief Get authors name.
- * @return Authors name.
- * @date 2026-06-20
- */
-std::string Author();
+// ----- UCI -----
 
-// Returns printable state of game.
-std::string GetState();
+// Allows engine to quit.
+void Quit();
+
+// Enables UCI.
+void Uci();
+
+// Synchronize the engine.
+void IsReady();
+
+// Set engine options.
+void SetOption(std::stringstream ss);
+
+// Setup the board state with given data.
+void SetPosition(std::stringstream ss);
+
+// Begin searching for best move with given params.
+void Go(std::stringstream ss);
+
+// Stops engine ASAP.
+void Stop();
+
+// Hits the ponder.
+void PonderHit();
+
+// ----- Custom -----
+
+// Prints position state.
+void D();
+
+// Swap player to move.
+void Flip();
+
+// Help menu.
+void Help();
+
+// ----- Non UCI -----
 
 // Check if engine should be searching right now or not.
 bool IsSearching();
 
-// Update
-
-// UCI
-
-/**
- * @brief Flips the current player.
- * @date 2026-06-20
- */
-void Flip();
-
-/**
- * @brief Blocking call for waiting on engine task completion.
- * @date 2026-06-21
- */
-void Ready();
-
-// Setup the board state with given data.
-bool SetState(std::string_view data);
-
-// Begin searching for best move with given params.
-void Search(std::string_view data);
-
-// Allows search to send move to make.
-void MakeMove(std::string_view data);
-
-// Stops engine ASAP.
-void Stop();
 }; // namespace Engine

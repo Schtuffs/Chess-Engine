@@ -38,11 +38,17 @@ static constexpr std::array<std::pair<std::string_view, u16>, 13> SEARCH_PARAMS 
 static bool     m_isWhiteTurn = true;
 static Position m_position(Fen::DEFAULT);
 
-static std::atomic<bool> m_isSearching;   // Search algorithm can change this when done
-static std::atomic<bool> m_stopSearching; // Main thread can call this to end engine
+static std::atomic<bool> m_isSearching;   // Search algorithm can change this when done.
+static std::atomic<bool> m_stopSearching; // Main thread can call this to end engine.
 static std::pair<u16, std::array<u64, SEARCH_PARAMS.size()>> m_searchParams;
 
+void Perft(const Position& pos, u64 depth);
+
 // ----- Helpers -----
+
+static std::string Name() { return "SchtuffsEngine"; }
+
+static std::string Author() { return "Schtuffs"; }
 
 u64 GetSearchParamKey(std::string_view str)
 {
@@ -68,39 +74,48 @@ bool ValidValue(u64 val) { return (val != INVALID_VALUE); }
 
 u64 KeyIndex(u64 key) { return std::log2(key); }
 
-// ----- Read -----
+static void MakeMove(std::string_view move)
+{
+    MoveList list;
+    list.Add(Convert::StrToMove(move, m_position.Player()));
+    list.Legalize(m_position);
 
-std::string Engine::Name() { return "SchtuffEngine"; }
+    for (Move move : list) {
+        if (m_position.Pieces(PAWN) & move.From()) {
+            if (std::abs(move.From() - move.To()) == 16) {
+                move = Move::MakeEnPassant(move.From(), move.To());
+            }
+        }
+        m_position.MakeMove(move);
+    }
+}
 
-std::string Engine::Author() { return "Schtuffs"; }
+// ----- UCI -----
 
-std::string Engine::GetState() { return m_position.Str(); }
+void Engine::Quit() { m_stopSearching = true; }
 
-bool Engine::IsSearching() { return !m_stopSearching; }
+void Engine::Uci() { SyncPrintln("id name {}\nid author {}\nuciok", Name(), Author()); }
 
-// ----- Update -----
+void Engine::IsReady() { m_stopSearching = true; }
 
-void Engine::Flip() { m_isWhiteTurn = !m_isWhiteTurn; }
+void Engine::SetOption(std::stringstream ss) { (void)ss; }
 
-void Engine::Ready() { m_stopSearching = true; }
-
-bool Engine::SetState(std::string_view data)
+void Engine::SetPosition(std::stringstream ss)
 {
     // New game
-    if (data == "ucinewgame") {
+    std::string token;
+    ss >> token;
+    if (token == "ucinewgame") {
         m_position = Position(Fen::DEFAULT);
         DebugPrintln("Engine::SetState: Valid fen: {}", m_position.Fen());
-        return true;
+        return;
     }
 
     // Get position data
-    std::stringstream ss(data.data());
-    std::string       token;
-    ss >> token;
     if (token != "position") {
         WarningPrintln("Engine::SetState: Invalid token: {}", token);
         m_position = Position(Fen::DEFAULT);
-        return false;
+        return;
     }
 
     // Get fen
@@ -120,7 +135,7 @@ bool Engine::SetState(std::string_view data)
     // Fen check
     if (!Fen::IsValidFen(fen.data())) {
         m_position = Position(Fen::DEFAULT);
-        return false;
+        return;
     }
 
     // Check for moves
@@ -128,39 +143,45 @@ bool Engine::SetState(std::string_view data)
     ss >> token;
     if (ss.fail()) {
         DebugPrintln("Engine::SetState: Valid fen: {}", m_position.Fen());
-        return true;
+        return;
     }
     if (token != "moves") {
         m_position = Position(Fen::DEFAULT);
-        return false;
+        return;
     }
 
     // Play moves
     ss >> token;
     while (!ss.fail()) {
-        Engine::MakeMove(token);
+        MakeMove(token);
         ss >> token;
     }
     DebugPrintln("Engine::SetState: Valid fen: {}", m_position.Fen());
-    return true;
 }
 
-void Engine::Search(std::string_view data)
+void Engine::Go(std::stringstream ss)
 {
     // Preparation
-    std::stringstream ss(data.data());
-    std::string       keyStr, valueStr;
+    std::string keyStr, valueStr;
     ss >> keyStr;
     ss >> keyStr;
     ss >> valueStr;
 
     while (!ss.fail()) {
-        u64 key    = GetSearchParamKey(keyStr);
-        u64 valStr = GetSearchParamValue(valueStr);
+        u64 key = GetSearchParamKey(keyStr);
+        u64 val = GetSearchParamValue(valueStr);
 
-        if (ValidValue(key) && ValidValue(valStr)) {
+        // Perft check
+        if (keyStr == "perft") {
+            if (ValidValue(val)) {
+                Perft(m_position, val);
+            }
+            return;
+        }
+
+        if (ValidValue(key) && ValidValue(val)) {
             m_searchParams.first |= (u16)key;
-            m_searchParams.second[KeyIndex(key)] = valStr;
+            m_searchParams.second[KeyIndex(key)] = val;
         } else {
             ErrorPrintln("Invalid arg: {} = {}", keyStr, valueStr);
             return;
@@ -179,20 +200,75 @@ void Engine::Search(std::string_view data)
     std::thread(Search::Begin, std::ref(m_position)).detach();
 }
 
-void Engine::MakeMove(std::string_view move)
+void Engine::Stop() { m_stopSearching = true; }
+
+void Engine::PonderHit() {}
+
+// ----- Custom UCI -----
+
+void Engine::Flip() { m_isWhiteTurn = !m_isWhiteTurn; }
+
+void Engine::D() { SyncPrintln("{}", m_position.Str()); }
+
+void Engine::Help() {}
+
+// ----- Other -----
+
+bool Engine::IsSearching() { return !m_stopSearching; }
+
+// ----- Testing -----
+
+u64 Perft(Position& pos, u64 depth)
 {
+    u64 total = 0;
+
+    if (depth == 0) {
+        return 1;
+    }
+
     MoveList list;
-    list.Add(Convert::StrToMove(move, m_position.Player()));
-    list.Legalize(m_position);
+    MoveGen::Generate(pos, list);
+    list.Legalize(pos);
+    if (depth == 1) {
+        return list.size;
+    }
 
     for (Move move : list) {
-        if (m_position.Pieces(PAWN) & move.From()) {
-            if (std::abs(move.From() - move.To()) == 16) {
-                move = Move::MakeEnPassant(move.From(), move.To());
-            }
-        }
-        m_position.MakeMove(move);
+        Position act(pos);
+        act.MakeMove(move);
+
+        u64 val = Perft(act, depth - 1);
+        total += val;
+
+        act.UnmakeMove(move);
     }
+
+    return total;
 }
 
-void Engine::Stop() { m_stopSearching = true; }
+void Perft(const Position& pos, u64 depth)
+{
+    auto start = std::chrono::steady_clock::now();
+
+    u64      total = 0;
+    MoveList list;
+    MoveGen::Generate(pos, list);
+    list.Legalize(pos);
+
+    for (Move move : list) {
+        Position act(pos);
+        act.MakeMove(move);
+
+        u64 val = Perft(act, depth - 1);
+        total += val;
+
+        act.UnmakeMove(move);
+        SyncPrintln("{}: {}", Convert::MoveToStr(move), val);
+    }
+
+    auto end = std::chrono::steady_clock::now();
+    SyncPrintln("\nNodes searched: {}", total);
+    SyncPrintln("Total time: {}ms",
+                std::chrono::milliseconds(std::chrono::nanoseconds(end - start).count() / 1'000'000)
+                    .count());
+}

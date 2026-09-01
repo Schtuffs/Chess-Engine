@@ -309,11 +309,10 @@ std::string Position::Str() const noexcept
 
     // Fen
     {
-        ret += "\n";
+        ret += "\n  Fen: ";
         ret += Fen();
     }
 
-    ret += "\n";
     return ret;
 }
 
@@ -445,8 +444,8 @@ void Position::UnmakeMove(Move move) noexcept
     // Unpromote
     if (move.IsPromo()) {
         PieceType pt = move.Promotion();
-        m_bbType[PAWN] |= to;
-        m_bbType[pt] &= ~BitBoard(to);
+        m_bbType[pt] &= ~BitBoard(from);
+        m_bbType[PAWN] |= from;
     }
 
     MovePiece(Move::Make(from, to));
@@ -519,8 +518,6 @@ void Position::ManageEnPassant(Move move) noexcept
 
 void Position::ManagePromotion(Move move) noexcept
 {
-    // Colour us   = Player();
-    // Square from = move.From();
     Square to = move.To();
 
     m_bbType[PAWN] &= ~BitBoard(to);

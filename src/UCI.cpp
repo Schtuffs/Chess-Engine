@@ -35,32 +35,34 @@ void UCI::Loop(int argc, char** argv)
 
         // UCI commands
 
-        if (token == "quit") {
+        if (token == "quit" || token == "q") {
             Engine::Stop();
+            token = "quit";
         }
 
         else if (token == "uci") {
-            SyncPrintln("id name {}\nid author {}\nuciok", Engine::Name(), Engine::Author());
+            Engine::Uci();
         }
 
         else if (token == "ucinewgame") {
-            Engine::SetState(std::string(" ") + Fen::DEFAULT.data());
+            Engine::SetPosition(std::stringstream(ss.str()));
         }
 
         else if (token == "isready") {
-            Engine::Ready();
+            Engine::IsReady();
             SyncPrintln("readyok");
         }
 
         else if (token == "setoption") {
+            Engine::SetOption(std::stringstream(ss.str()));
         }
 
-        else if (token == "Types/Position") {
-            Engine::SetState(ss.str());
+        else if (token == "position") {
+            Engine::SetPosition(std::stringstream(ss.str()));
         }
 
         else if (token == "go") {
-            Engine::Search(ss.str());
+            Engine::Go(std::stringstream(ss.str()));
         }
 
         else if (token == "stop") {
@@ -68,13 +70,13 @@ void UCI::Loop(int argc, char** argv)
         }
 
         else if (token == "ponderhit") {
+            Engine::PonderHit();
         }
 
         // Custom commands
 
         else if (token == "d") {
-            std::string state = Engine::GetState();
-            SyncPrintln("{}", state);
+            Engine::D();
         }
 
         else if (token == "flip" || token == "0000") {
