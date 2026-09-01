@@ -78,16 +78,13 @@ inline constexpr Move StrToMove(std::string_view str, Colour player)
     if (str == "O-O") {
         if (player == WHITE) {
             return Move::MakeCastle(SQ_E1, SQ_G1);
-        }
-        else {
+        } else {
             return Move::MakeCastle(SQ_E8, SQ_G8);
         }
-    }
-    else if (str == "O-O-O") {
+    } else if (str == "O-O-O") {
         if (player == WHITE) {
             return Move::MakeCastle(SQ_E1, SQ_C1);
-        }
-        else {
+        } else {
             return Move::MakeCastle(SQ_E8, SQ_C8);
         }
     }
@@ -108,8 +105,11 @@ inline constexpr std::string MoveToStr(Move move)
     constexpr const char NUMBERS[] = "12345678";
 
     if (move.IsCastle()) {
-        // TODO
-        return "O-O";
+        if (move.To() > move.From()) {
+            return "O-O";
+        } else {
+            return "O-O-O";
+        }
     }
 
     std::string str;
