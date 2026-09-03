@@ -148,10 +148,10 @@ void GenerateAll(const Position& pos, MoveList& list)
 
     if (pos.Checkers() < 2) {
         GeneratePawnMoves<us, type>(pos, list, valid);
-        GenerateMoves<us, BISHOP>(pos, list, valid);
         GenerateMoves<us, KNIGHT>(pos, list, valid);
-        GenerateMoves<us, QUEEN>(pos, list, valid);
+        GenerateMoves<us, BISHOP>(pos, list, valid);
         GenerateMoves<us, ROOK>(pos, list, valid);
+        GenerateMoves<us, QUEEN>(pos, list, valid);
     }
 
     Square   ksq = pos.Pieces(us, KING).PopLSB();

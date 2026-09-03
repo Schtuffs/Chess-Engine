@@ -104,13 +104,13 @@ inline constexpr std::string MoveToStr(Move move)
     constexpr const char LETTERS[] = "abcdefgh";
     constexpr const char NUMBERS[] = "12345678";
 
-    if (move.IsCastle()) {
-        if (move.To() > move.From()) {
-            return "O-O";
-        } else {
-            return "O-O-O";
-        }
-    }
+    // if (move.IsCastle()) {
+    //     if (move.To() > move.From()) {
+    //         return "O-O";
+    //     } else {
+    //         return "O-O-O";
+    //     }
+    // }
 
     std::string str;
     str += LETTERS[move.From() % 8];
