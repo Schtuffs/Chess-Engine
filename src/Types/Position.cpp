@@ -153,6 +153,7 @@ bool Position::IsCastleLegal(Square from, Square to) const noexcept
     } else {
         bb = bb >> 1;
         bb |= bb >> 1;
+        bb |= bb >> 1;
     }
 
     // Can't have other pieces there
@@ -518,12 +519,12 @@ void Position::ManageEnPassant(Move move) noexcept
 
 void Position::ManagePromotion(Move move) noexcept
 {
-    Square to = move.To();
+    Square sq = move.To();
 
-    m_bbType[PAWN] &= ~BitBoard(to);
+    m_bbType[PAWN] &= ~BitBoard(sq);
 
     PieceType pt = move.Promotion();
-    m_bbType[pt] |= to;
+    m_bbType[pt] |= sq;
 }
 
 void Position::CalculateAttacks() noexcept

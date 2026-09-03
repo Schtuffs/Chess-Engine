@@ -105,8 +105,8 @@ void GeneratePawnMoves(const Position& pos, MoveList& list, BitBoard valid)
 
     // Promotions
     if (promoting) {
-        BitBoard b1 = Shift<upEast>(promoting) & enemies;
-        BitBoard b2 = Shift<upWest>(promoting) & enemies;
+        BitBoard b1 = (Shift<upEast>(promoting) & enemies) & ~FILE_1BB;
+        BitBoard b2 = (Shift<upWest>(promoting) & enemies) & ~FILE_8BB;
         BitBoard b3 = Shift<up>(promoting) & empty;
 
         while (b1) {
