@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -136,8 +137,8 @@ private:
 inline std::string Move::Str() const noexcept
 {
     std::stringstream str;
-    str << "From: " << (i32)From();
-    str << ", To: " << (i32)To();
+    str << "From: " << std::format("{:2}", (i32)From());
+    str << ", To: " << std::format("{:2}", (i32)To());
     str << ", P: " << IsPromo();
     str << ", C: " << IsCastle();
     str << ", E: " << IsEnPassant();

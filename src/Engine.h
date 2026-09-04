@@ -11,6 +11,24 @@
 
 namespace Engine {
 
+// Holds data for search engine to use to find moves
+struct SearchParams {
+    u64 wtime;
+    u64 btime;
+    u64 winc;
+    u64 binc;
+    u64 movestogo;
+    u64 movetime;
+
+    u64 depth;
+    u64 nodes;
+    u64 mate;
+    u64 infinite;
+
+    u64 ponder;
+    u64 searchmoves;
+};
+
 // ----- Update -----
 
 // ----- UCI -----
@@ -49,10 +67,5 @@ void Flip();
 
 // Help menu.
 void Help();
-
-// ----- Non UCI -----
-
-// Check if engine should be searching right now or not.
-bool IsSearching();
 
 }; // namespace Engine

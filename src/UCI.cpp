@@ -17,6 +17,7 @@
 
 void UCI::Loop(int argc, char** argv)
 {
+    Utils::SetLogLevel(Utils::LogLevel::INFO);
     (void)argc;
     (void)argv;
 
@@ -31,7 +32,7 @@ void UCI::Loop(int argc, char** argv)
 
         token.clear();
         ss >> token;
-        DebugPrintln("Token: {}", token);
+        DebugPrintln("UCI::Loop: Token: {}", token);
 
         // UCI commands
 
@@ -102,7 +103,7 @@ void UCI::Loop(int argc, char** argv)
         }
 
         else {
-            ErrorPrintln("Unknown command: {}", token);
+            ErrorPrintln("Unknown command: \"{}\".", token);
         }
 
     } while (token != "quit");

@@ -16,7 +16,7 @@
 
 static constexpr u64 INVALID_VALUE = 0xff'ff'ff'ff'ff'ff'ff'ff;
 // clang-format off
-static constexpr std::array<std::pair<std::string_view, u16>, 13> SEARCH_PARAMS = {
+static constexpr std::array<std::pair<std::string_view, u16>, 12> SEARCH_PARAMS = {
     std::pair{"wtime",       0x00'01},
     std::pair{"btime",       0x00'02},
     std::pair{"winc",        0x00'04},
@@ -31,7 +31,6 @@ static constexpr std::array<std::pair<std::string_view, u16>, 13> SEARCH_PARAMS 
 
     std::pair{"ponder",      0x04'00},
     std::pair{"searchmoves", 0x08'00},
-    std::pair{"perft",       0x10'00},
 };
 // clang-format on
 
@@ -107,45 +106,60 @@ void Engine::SetPosition(std::stringstream ss)
     ss >> token;
     if (token == "ucinewgame") {
         m_position = Position(Fen::DEFAULT);
-        DebugPrintln("Engine::SetState: Valid fen: {}", m_position.Fen());
+        DebugPrintln("Engine::SetPosition: Valid fen: {}", m_position.Fen());
         return;
     }
 
-    // Get position data
+    // Check its position
     if (token != "position") {
-        WarningPrintln("Engine::SetState: Invalid token: {}", token);
+        WarningPrintln("Engine::SetPosition: Invalid token: {}", token);
         m_position = Position(Fen::DEFAULT);
         return;
     }
 
     // Get fen
+    ss >> token;
     std::string fen;
-    ss >> fen;
-    if (fen == "startpos") {
-        fen = Fen::DEFAULT;
-    } else {
+    if (token == "fen") {
+        // Get other fen data
         ss >> token;
-        while (!ss.fail() && token != "moves") {
+        fen += token;
+        for (int i = 0; i < 5; i++) {
+            ss >> token;
+            if (ss.fail()) {
+                ErrorPrintln("Engine::SetPosition: Invalid position arg: {}", token);
+                m_position = Position(Fen::DEFAULT);
+                return;
+            }
+
             fen += " ";
             fen += token;
-            ss >> token;
         }
-    }
-
-    // Fen check
-    if (!Fen::IsValidFen(fen.data())) {
+    } else if (token == "startpos") {
+        fen = Fen::DEFAULT;
+    } else {
+        ErrorPrintln("Engine::SetPosition: Invalid position arg: {}", token);
         m_position = Position(Fen::DEFAULT);
         return;
     }
 
-    // Check for moves
-    m_position = Position(Fen::DEFAULT);
-    ss >> token;
-    if (ss.fail()) {
-        DebugPrintln("Engine::SetState: Valid fen: {}", m_position.Fen());
+    // Fen check
+    if (!Fen::IsValidFen(fen.data())) {
+        ErrorPrintln("Engine::SetPosition: Invalid fen: {}", fen);
+        m_position = Position(Fen::DEFAULT);
         return;
     }
+    m_position = Position(fen);
+
+    // Check for moves
+    ss >> token;
+    if (ss.fail()) {
+        DebugPrintln("Engine::SetPosition: Valid fen: {}", m_position.Fen());
+        return;
+    }
+
     if (token != "moves") {
+        WarningPrintln("Engine::SetPosition: Invalid token after fen: {}", token);
         m_position = Position(Fen::DEFAULT);
         return;
     }
@@ -167,9 +181,14 @@ void Engine::Go(std::stringstream ss)
     ss >> keyStr;
     ss >> valueStr;
 
+    Engine::SearchParams params;
+
     while (!ss.fail()) {
         u64 key = GetSearchParamKey(keyStr);
         u64 val = GetSearchParamValue(valueStr);
+        if (keyStr == "depth") {
+            params.depth = val;
+        }
 
         // Perft check
         if (keyStr == "perft") {
@@ -197,10 +216,14 @@ void Engine::Go(std::stringstream ss)
     }
 #endif
 
-    std::thread(Search::Begin, std::ref(m_position)).detach();
+    std::thread(Search::Begin, std::ref(m_position), params).detach();
 }
 
-void Engine::Stop() { m_stopSearching = true; }
+void Engine::Stop()
+{
+    m_stopSearching = true;
+    Search::Stop();
+}
 
 void Engine::PonderHit() {}
 
@@ -211,10 +234,6 @@ void Engine::Flip() { m_isWhiteTurn = !m_isWhiteTurn; }
 void Engine::D() { SyncPrintln("{}", m_position.Str()); }
 
 void Engine::Help() {}
-
-// ----- Other -----
-
-bool Engine::IsSearching() { return !m_stopSearching; }
 
 // ----- Testing -----
 

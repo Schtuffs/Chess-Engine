@@ -288,11 +288,11 @@ std::string Position::Str() const noexcept
             }
 
             if (c == '/') {
-                ret += std::to_string(rank++) + line + VERT_SPACE;
+                ret += std::to_string(9 - (rank++)) + line + VERT_SPACE;
                 line = HORZ_SPACE;
             }
         }
-        ret += std::to_string(rank++) + line + VERT_SPACE;
+        ret += std::to_string(9 - (rank++)) + line + VERT_SPACE;
         ret += "    a   b   c   d   e   f   g   h\n";
     }
 
