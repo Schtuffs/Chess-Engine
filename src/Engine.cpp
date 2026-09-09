@@ -247,19 +247,18 @@ u64 Perft(Position& pos, u64 depth)
 
     MoveList list;
     MoveGen::Generate(pos, list);
-    list.Legalize(pos);
-    if (depth == 1) {
-        return list.size;
-    }
-
     for (Move move : list) {
-        Position act(pos);
-        act.MakeMove(move);
+        if (!pos.IsLegal(move)) {
+            continue;
+        }
 
-        u64 val = Perft(act, depth - 1);
-        total += val;
+        pos.MakeMove(move);
+        if (pos.Checkers(~pos.Player()) == 0) {
+            u64 val = Perft(pos, depth - 1);
+            total += val;
+        }
 
-        act.UnmakeMove(move);
+        pos.UnmakeMove(move);
     }
 
     return total;
@@ -269,20 +268,24 @@ void Perft(const Position& pos, u64 depth)
 {
     auto start = std::chrono::steady_clock::now();
 
+    Position act(pos);
     u64      total = 0;
+
     MoveList list;
     MoveGen::Generate(pos, list);
-    list.Legalize(pos);
-
     for (Move move : list) {
-        Position act(pos);
-        act.MakeMove(move);
+        if (!act.IsLegal(move)) {
+            continue;
+        }
 
-        u64 val = Perft(act, depth - 1);
-        total += val;
+        act.MakeMove(move);
+        if (act.Checkers(~act.Player()) == 0) {
+            u64 val = Perft(act, depth - 1);
+            total += val;
+            SyncPrintln("{}: {}", Convert::MoveToStr(move), val);
+        }
 
         act.UnmakeMove(move);
-        SyncPrintln("{}: {}", Convert::MoveToStr(move), val);
     }
 
     auto end = std::chrono::steady_clock::now();

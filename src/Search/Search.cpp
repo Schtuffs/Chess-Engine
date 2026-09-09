@@ -75,8 +75,7 @@ void Search::Begin(const Position& position, Engine::SearchParams params)
     MoveGen::Generate(pos, list);
     double mult     = (pos.Player() == WHITE ? -1. : 1.);
     double bestEval = -EXIT_VAL;
-    std::println("Begin val: {}", bestEval);
-    Move bestMove;
+    Move   bestMove;
 
     for (Move move : list) {
         if (!m_isSearching) {

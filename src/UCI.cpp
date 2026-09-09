@@ -17,7 +17,7 @@
 
 void UCI::Loop(int argc, char** argv)
 {
-    Utils::SetLogLevel(Utils::LogLevel::INFO);
+    Utils::SetLogLevel(Utils::LogLevel::DEBUG);
     (void)argc;
     (void)argv;
 
